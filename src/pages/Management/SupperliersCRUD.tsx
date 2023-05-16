@@ -74,9 +74,6 @@ function SupperliersCRUD() {
     }, 1000); // 5000 milliseconds = 5 seconds
   }, []);
 
-  //Text of Tyography:
-  const { Text } = Typography;
-
   //Create data
   const handleCreate = (record: any) => {
     record.createdBy = auth.payload;
