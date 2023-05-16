@@ -154,7 +154,7 @@ const ProductsCRUD = () => {
       (product: any) => product._id === updateId?._id
     );
     setUpdateId(updatedSelectedOrder || null);
-  }, [productsTEST]);
+  }, [productsTEST, updateId?._id]);
 
   //Columns of TABLE ANT_DESIGN
   const columns = [

@@ -15,7 +15,6 @@ import { axiosClient } from "../../libraries/axiosClient";
 
 export default function Orders() {
   const [refresh, setRefresh] = useState(0);
-  const [open, setOpen] = useState(false);
   const [addProductsModalVisible, setAddProductsModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   // Products
@@ -39,7 +38,7 @@ export default function Orders() {
       (order: any) => order.id === selectedOrder?.id
     );
     setSelectedOrder(updatedSelectedOrder || null);
-  }, [orders]);
+  }, [orders, selectedOrder?.id]);
 
   const handleDelete = async (record: any, index: any) => {
     const currentProduct = record;
@@ -180,7 +179,6 @@ export default function Orders() {
           <Button
             onClick={() => {
               setSelectedOrder(record);
-              setOpen(true);
             }}
           >
             Select

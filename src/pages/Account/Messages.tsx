@@ -80,7 +80,7 @@ const Messages: React.FC<any> = () => {
     arrivalMessage &&
       conversationInfor?.friends._id.includes(arrivalMessage.senderId);
     setMessages((prev: any) => [...prev, arrivalMessage]);
-  }, [arrivalMessage, conversations]);
+  }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
 
   //Add user for socket.io
   useEffect(() => {
@@ -144,7 +144,9 @@ const Messages: React.FC<any> = () => {
           `http://localhost:9000/conversations`,
           conversationCreate
         );
-        setRefresh((f) => f + 1);
+        if (res) {
+          setRefresh((f) => f + 1);
+        }
       } catch (error) {
         console.log("««««« error »»»»»", error);
       }
@@ -259,7 +261,7 @@ const Messages: React.FC<any> = () => {
     };
 
     fetchData();
-  }, [conversations]);
+  }, [conversations, auth.payload._id]);
 
   return (
     <>
