@@ -22,7 +22,7 @@ const HomePage = () => {
   }, []);
 
   const asyncFetch1 = () => {
-    fetch("https://web-server3.onrender.com//questions/24")
+    fetch("https://web-server3.onrender.com/questions/24")
       .then((response) => response.json())
       .then((json) => setData1(json))
       .catch((error) => {
@@ -62,7 +62,7 @@ const HomePage = () => {
   };
 
   const asyncFetch2 = () => {
-    fetch("https://web-server3.onrender.com//questions/18")
+    fetch("https://web-server3.onrender.com/questions/18")
       .then((response) => response.json())
       .then((json) => setData2(json))
       .catch((error) => {
@@ -80,7 +80,7 @@ const HomePage = () => {
   };
 
   const asyncFetch3 = () => {
-    fetch("https://web-server3.onrender.com//questions/19")
+    fetch("https://web-server3.onrender.com/questions/19")
       .then((response) => response.json())
       .then((json) => setData3(json))
       .catch((error) => {

@@ -59,7 +59,7 @@ const Information = (props: Props) => {
     setActiveTabKey(key);
   };
 
-  const E_URL = `https://web-server3.onrender.com//employees?employeeId=${auth.payload._id}`;
+  const E_URL = `https://web-server3.onrender.com/employees?employeeId=${auth.payload._id}`;
   useEffect(() => {
     axios.get(E_URL);
   }, []);

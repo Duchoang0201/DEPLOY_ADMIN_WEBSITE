@@ -65,7 +65,7 @@ const ProductsCRUD = () => {
   const [file, setFile] = useState<any>();
 
   //API_URL
-  const API_URL = "https://web-server3.onrender.com//products";
+  const API_URL = "https://web-server3.onrender.com/products";
   const [categories, setCategories] = useState<Array<any>>([]);
   const [suppliers, setSuppliers] = useState([]);
 
@@ -647,7 +647,7 @@ const ProductsCRUD = () => {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://web-server3.onrender.com//upload/products/${record._id}/images`}
+            action={`https://web-server3.onrender.com/upload/products/${record._id}/images`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -699,7 +699,7 @@ const ProductsCRUD = () => {
   //CALL API CATEGORY
   useEffect(() => {
     axios
-      .get("https://web-server3.onrender.com//categories")
+      .get("https://web-server3.onrender.com/categories")
       .then((res) => {
         setCategories(res.data.results);
       })
@@ -709,7 +709,7 @@ const ProductsCRUD = () => {
   //CALL API SUPPLIER
   useEffect(() => {
     axios
-      .get("https://web-server3.onrender.com//suppliers")
+      .get("https://web-server3.onrender.com/suppliers")
       .then((res) => {
         setSuppliers(res.data.results);
       })
@@ -882,7 +882,7 @@ const ProductsCRUD = () => {
     .filter(Boolean)
     .join("&");
 
-  let URL_FILTER = `https://web-server3.onrender.com//products?${queryParams}&limit=10`;
+  let URL_FILTER = `https://web-server3.onrender.com/products?${queryParams}&limit=10`;
   // CALL API FILTER PRODUCT DEPEND ON QUERY
   useEffect(() => {
     axios
@@ -1384,7 +1384,7 @@ const ProductsCRUD = () => {
             <Upload
               showUploadList={false}
               name="file"
-              action={`https://web-server3.onrender.com//upload/products/${updateId?._id}/image`}
+              action={`https://web-server3.onrender.com/upload/products/${updateId?._id}/image`}
               headers={{ authorization: "authorization-text" }}
               onChange={(info) => {
                 if (info.file.status !== "uploading") {
@@ -1423,7 +1423,7 @@ const ProductsCRUD = () => {
             {updateId && (
               <Upload
                 name="file"
-                action={`https://web-server3.onrender.com//upload/products/${updateId?._id}/images`}
+                action={`https://web-server3.onrender.com/upload/products/${updateId?._id}/images`}
                 listType="picture-card"
                 fileList={updateId?.images?.map((item: any, index: any) => ({
                   uid: `${-index}`,

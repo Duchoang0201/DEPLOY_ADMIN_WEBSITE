@@ -15,7 +15,7 @@ export const useAuthStore = create(
         login: async ({ email, password }: isLogin) => {
           try {
             const response = await axios.post(
-              "https://web-server3.onrender.com//employees/login",
+              "https://web-server3.onrender.com/employees/login",
               {
                 email: email,
                 password: password,
