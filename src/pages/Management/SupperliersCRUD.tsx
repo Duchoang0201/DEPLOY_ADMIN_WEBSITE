@@ -19,7 +19,6 @@ import {
   Select,
   Space,
   Table,
-  Typography,
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
 import axios from "axios";
