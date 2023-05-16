@@ -21,7 +21,7 @@ const Conversation = ({ conver }: { conver: any }) => {
     console.log("««««« query »»»»»", query);
     const getUser = async () => {
       const res = await axios.get(
-        `https://web-server-test-jxaf.onrender.com//employees?${query}`
+        `https://web-server-test-jxaf.onrender.com/employees?${query}`
       );
       console.log("««««« res.data »»»»»", res.data);
       setData(res.data.results);
@@ -35,7 +35,7 @@ const Conversation = ({ conver }: { conver: any }) => {
     }
     setLoading(true);
 
-    // fetch(`https://web-server-test-jxaf.onrender.com//employees?employeeId=${auth.payload._id}`)
+    // fetch(`https://web-server-test-jxaf.onrender.com/employees?employeeId=${auth.payload._id}`)
     //   .then((res) => res.json())
     //   .then((body) => {
     //     console.log(body);

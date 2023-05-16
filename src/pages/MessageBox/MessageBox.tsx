@@ -25,7 +25,7 @@ const MessageBox: React.FC = () => {
     const getConversations = async () => {
       try {
         const res = await axios.get(
-          "https://web-server-test-jxaf.onrender.com//conversations"
+          "https://web-server-test-jxaf.onrender.com/conversations"
         );
         setConversations(res.data);
       } catch (error) {}
@@ -33,7 +33,7 @@ const MessageBox: React.FC = () => {
     getConversations();
   }, [users]);
 
-  const API_USERS = "https://web-server-test-jxaf.onrender.com//employees";
+  const API_USERS = "https://web-server-test-jxaf.onrender.com/employees";
   useEffect(() => {
     axios
       .get(API_USERS)

@@ -96,7 +96,7 @@ const Messages: React.FC<any> = () => {
     const getAllUsers = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com//employees`
+          `https://web-server-test-jxaf.onrender.com/employees`
         );
         const dataIn = res.data.results.filter(
           (item: any) => item._id !== auth.payload._id
@@ -112,7 +112,7 @@ const Messages: React.FC<any> = () => {
     const getConversations = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com//conversations/${auth.payload._id}`
+          `https://web-server-test-jxaf.onrender.com/conversations/${auth.payload._id}`
         );
 
         setConversations(res.data);
@@ -132,7 +132,7 @@ const Messages: React.FC<any> = () => {
       };
       try {
         const res = await axios.post(
-          `https://web-server-test-jxaf.onrender.com//conversations`,
+          `https://web-server-test-jxaf.onrender.com/conversations`,
           conversationCreate
         );
         setRefresh((f) => f + 1);
@@ -157,7 +157,7 @@ const Messages: React.FC<any> = () => {
     const getUser = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com//employees/${friendId}`
+          `https://web-server-test-jxaf.onrender.com/employees/${friendId}`
         );
         setDataUserMenu(res.data.results);
       } catch (error) {}
@@ -208,7 +208,7 @@ const Messages: React.FC<any> = () => {
 
     try {
       const res = await axios.post(
-        "https://web-server-test-jxaf.onrender.com//messages",
+        "https://web-server-test-jxaf.onrender.com/messages",
         messageSend
       );
       setRefresh((f) => f + 1);
@@ -229,7 +229,7 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com//messages/${conversationCurrent._id}`
+          `https://web-server-test-jxaf.onrender.com/messages/${conversationCurrent._id}`
         );
         setMessages(res.data);
       } catch (error) {}
@@ -271,7 +271,7 @@ const Messages: React.FC<any> = () => {
 
           try {
             const response = await axios.get(
-              `https://web-server-test-jxaf.onrender.com//employees/${otherMembers}`
+              `https://web-server-test-jxaf.onrender.com/employees/${otherMembers}`
             );
             return response.data;
           } catch (error) {

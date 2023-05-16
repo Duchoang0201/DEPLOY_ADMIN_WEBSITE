@@ -21,7 +21,7 @@ export default function Orders() {
   const [products, setProducts] = useState<any>([]);
   useEffect(() => {
     axios
-      .get("https://web-server-test-jxaf.onrender.com//products")
+      .get("https://web-server-test-jxaf.onrender.com/products")
       .then((response) => {
         setProducts(response.data.results);
       });
