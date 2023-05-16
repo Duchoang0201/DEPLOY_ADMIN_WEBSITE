@@ -22,7 +22,7 @@ export default function Orders() {
   // Products
   const [products, setProducts] = useState<any>([]);
   useEffect(() => {
-    axios.get("http://localhost:9000/products").then((response) => {
+    axios.get("https://web-server3.onrender.com//products").then((response) => {
       setProducts(response.data.results);
     });
   }, [refresh]);

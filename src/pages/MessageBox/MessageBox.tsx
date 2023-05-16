@@ -24,14 +24,16 @@ const MessageBox: React.FC = () => {
   useEffect(() => {
     const getConversations = async () => {
       try {
-        const res = await axios.get("http://localhost:9000/conversations");
+        const res = await axios.get(
+          "https://web-server3.onrender.com//conversations"
+        );
         setConversations(res.data);
       } catch (error) {}
     };
     getConversations();
   }, [users]);
 
-  const API_USERS = "http://localhost:9000/employees";
+  const API_USERS = "https://web-server3.onrender.com//employees";
   useEffect(() => {
     axios
       .get(API_USERS)

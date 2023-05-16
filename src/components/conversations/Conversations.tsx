@@ -20,7 +20,9 @@ const Conversation = ({ conver }: { conver: any }) => {
       .join("&");
     console.log("««««« query »»»»»", query);
     const getUser = async () => {
-      const res = await axios.get(`http://localhost:9000/employees?${query}`);
+      const res = await axios.get(
+        `https://web-server3.onrender.com//employees?${query}`
+      );
       console.log("««««« res.data »»»»»", res.data);
       setData(res.data.results);
     };
@@ -33,7 +35,7 @@ const Conversation = ({ conver }: { conver: any }) => {
     }
     setLoading(true);
 
-    // fetch(`http://localhost:9000/employees?employeeId=${auth.payload._id}`)
+    // fetch(`https://web-server3.onrender.com//employees?employeeId=${auth.payload._id}`)
     //   .then((res) => res.json())
     //   .then((body) => {
     //     console.log(body);

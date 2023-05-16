@@ -106,7 +106,9 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const res = await axios.get(`http://localhost:9000/employees`);
+        const res = await axios.get(
+          `https://web-server3.onrender.com//employees`
+        );
         const dataIn = res.data.results.filter(
           (item: any) => item._id !== auth.payload._id
         );
@@ -121,7 +123,7 @@ const Messages: React.FC<any> = () => {
     const getConversations = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/conversations/${auth.payload._id}`
+          `https://web-server3.onrender.com//conversations/${auth.payload._id}`
         );
 
         setConversations(res.data);
@@ -141,7 +143,7 @@ const Messages: React.FC<any> = () => {
       };
       try {
         const res = await axios.post(
-          `http://localhost:9000/conversations`,
+          `https://web-server3.onrender.com//conversations`,
           conversationCreate
         );
         if (res) {
@@ -173,7 +175,7 @@ const Messages: React.FC<any> = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:9000/messages",
+        "https://web-server3.onrender.com//messages",
         messageSend
       );
       setRefresh((f) => f + 1);
@@ -194,7 +196,7 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/messages/${conversationInfor.conversationId}`
+          `https://web-server3.onrender.com//messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
         console.log("««««« res »»»»»", res.data);
@@ -232,7 +234,7 @@ const Messages: React.FC<any> = () => {
 
           try {
             const response = await axios.get(
-              `http://localhost:9000/employees/${otherMembers}`
+              `https://web-server3.onrender.com//employees/${otherMembers}`
             );
             const friendData = response.data.result; // Assuming the friend data is in the 'result' property
             const friendInfo = {

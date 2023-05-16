@@ -34,7 +34,7 @@ function CategoryCRUD() {
   // Date Picker Setting
 
   // API OF
-  let API_URL = "http://localhost:9000/categories";
+  let API_URL = "https://web-server3.onrender.com//categories";
 
   // MODAL:
   // Modal open Create:

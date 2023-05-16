@@ -65,7 +65,7 @@ const ProductsCRUD = () => {
   const [file, setFile] = useState<any>();
 
   //API_URL
-  const API_URL = "http://localhost:9000/products";
+  const API_URL = "https://web-server3.onrender.com//products";
   const [categories, setCategories] = useState<Array<any>>([]);
   const [suppliers, setSuppliers] = useState([]);
 
@@ -257,7 +257,7 @@ const ProductsCRUD = () => {
             {record.imageUrl && (
               <div className="d-flex justify-content-between">
                 <img
-                  src={"http://localhost:9000" + record.imageUrl}
+                  src={"https://web-server3.onrender.com/" + record.imageUrl}
                   style={{ height: 60 }}
                   alt="record.imageUrl"
                 />
@@ -647,7 +647,7 @@ const ProductsCRUD = () => {
           <Upload
             showUploadList={false}
             name="file"
-            action={`http://localhost:9000/upload/products/${record._id}/images`}
+            action={`https://web-server3.onrender.com//upload/products/${record._id}/images`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -699,7 +699,7 @@ const ProductsCRUD = () => {
   //CALL API CATEGORY
   useEffect(() => {
     axios
-      .get("http://localhost:9000/categories")
+      .get("https://web-server3.onrender.com//categories")
       .then((res) => {
         setCategories(res.data.results);
       })
@@ -709,7 +709,7 @@ const ProductsCRUD = () => {
   //CALL API SUPPLIER
   useEffect(() => {
     axios
-      .get("http://localhost:9000/suppliers")
+      .get("https://web-server3.onrender.com//suppliers")
       .then((res) => {
         setSuppliers(res.data.results);
       })
@@ -882,7 +882,7 @@ const ProductsCRUD = () => {
     .filter(Boolean)
     .join("&");
 
-  let URL_FILTER = `http://localhost:9000/products?${queryParams}&limit=10`;
+  let URL_FILTER = `https://web-server3.onrender.com//products?${queryParams}&limit=10`;
   // CALL API FILTER PRODUCT DEPEND ON QUERY
   useEffect(() => {
     axios
@@ -1379,12 +1379,12 @@ const ProductsCRUD = () => {
             <Image
               width={200}
               height={200}
-              src={`http://localhost:9000${updateId?.imageUrl}`}
+              src={`https://web-server3.onrender.com/${updateId?.imageUrl}`}
             />
             <Upload
               showUploadList={false}
               name="file"
-              action={`http://localhost:9000/upload/products/${updateId?._id}/image`}
+              action={`https://web-server3.onrender.com//upload/products/${updateId?._id}/image`}
               headers={{ authorization: "authorization-text" }}
               onChange={(info) => {
                 if (info.file.status !== "uploading") {
@@ -1417,19 +1417,19 @@ const ProductsCRUD = () => {
                   key={index}
                   width={200}
                   height={200}
-                  src={`http://localhost:9000${item}`}
+                  src={`https://web-server3.onrender.com/${item}`}
                 />
               ))} */}
             {updateId && (
               <Upload
                 name="file"
-                action={`http://localhost:9000/upload/products/${updateId?._id}/images`}
+                action={`https://web-server3.onrender.com//upload/products/${updateId?._id}/images`}
                 listType="picture-card"
                 fileList={updateId?.images?.map((item: any, index: any) => ({
                   uid: `${-index}`,
                   name: `image${index}.png`,
                   status: "done",
-                  url: `http://localhost:9000${item}`,
+                  url: `https://web-server3.onrender.com/${item}`,
                 }))}
                 onChange={(record: any) => {
                   if (record.file.status !== "uploading") {
@@ -1438,7 +1438,8 @@ const ProductsCRUD = () => {
                   if (record.file.status === "removed") {
                     const newlistPicture = updateId?.images?.filter(
                       (item: any) =>
-                        `http://localhost:9000${item}` !== record.file.url
+                        `https://web-server3.onrender.com/${item}` !==
+                        record.file.url
                     );
                     console.log("««««« newlistPicture »»»»»", newlistPicture);
                     axios

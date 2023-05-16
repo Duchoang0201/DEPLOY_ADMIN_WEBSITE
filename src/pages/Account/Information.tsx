@@ -40,7 +40,7 @@ const Information = (props: Props) => {
   };
   const { auth } = useAuthStore((state: any) => state);
 
-  const E_URL = `http://localhost:9000/employees/${auth.payload._id}`;
+  const E_URL = `https://web-server3.onrender.com//employees/${auth.payload._id}`;
 
   useEffect(() => {
     axios
@@ -57,7 +57,10 @@ const Information = (props: Props) => {
     const confirmData = { [selectItem]: updateData[selectItem] };
     updateForm.resetFields();
     axios
-      .patch(`http://localhost:9000/employees/${auth.payload._id}`, confirmData)
+      .patch(
+        `https://web-server3.onrender.com//employees/${auth.payload._id}`,
+        confirmData
+      )
       .then((res) => {
         console.log(res);
         setRefresh((f) => f + 1);
