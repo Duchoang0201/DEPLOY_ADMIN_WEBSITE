@@ -51,7 +51,7 @@ export default function ProductsCRUD() {
       render: (text: any, record: any, index: any) => {
         return (
           <img
-            src={"https://web-server3.onrender.com/" + text}
+            src={"https://web-server-test-jxaf.onrender.com//" + text}
             style={{ height: 60 }}
           />
         );
@@ -148,7 +148,7 @@ export default function ProductsCRUD() {
               showUploadList={false}
               name="file"
               action={
-                "https://web-server3.onrender.com/upload/products/" +
+                "https://web-server-test-jxaf.onrender.com//upload/products/" +
                 record._id +
                 "/image"
               }
@@ -195,15 +195,17 @@ export default function ProductsCRUD() {
   ];
 
   React.useEffect(() => {
-    axios.get("https://web-server3.onrender.com/suppliers").then((response) => {
-      setSuppliers(response.data.results);
-      // console.log(response.data.results);
-    });
+    axios
+      .get("https://web-server-test-jxaf.onrender.com//suppliers")
+      .then((response) => {
+        setSuppliers(response.data.results);
+        // console.log(response.data.results);
+      });
   }, []);
 
   React.useEffect(() => {
     axios
-      .get("https://web-server3.onrender.com/categories")
+      .get("https://web-server-test-jxaf.onrender.com//categories")
       .then((response) => {
         setCategories(response.data.results);
         // console.log(response.data.results);
@@ -211,10 +213,12 @@ export default function ProductsCRUD() {
   }, []);
 
   React.useEffect(() => {
-    axios.get("https://web-server3.onrender.com/products").then((response) => {
-      setProducts(response.data.results);
-      // console.log(response.data.results);
-    });
+    axios
+      .get("https://web-server-test-jxaf.onrender.com//products")
+      .then((response) => {
+        setProducts(response.data.results);
+        // console.log(response.data.results);
+      });
   }, [refresh]);
 
   const onFinish = (values: any) => {
@@ -222,7 +226,7 @@ export default function ProductsCRUD() {
     // CODE HERE ...
     // CALL API TO CREATE CUSTOMER
     axios
-      .post("https://web-server3.onrender.com/products", values)
+      .post("https://web-server-test-jxaf.onrender.com//products", values)
       .then((response) => {
         if (response.status === 201) {
           createForm.resetFields();
@@ -238,7 +242,8 @@ export default function ProductsCRUD() {
     // CALL API TO CREATE CUSTOMER
     axios
       .patch(
-        "https://web-server3.onrender.com/products/" + selectedProduct.id,
+        "https://web-server-test-jxaf.onrender.com//products/" +
+          selectedProduct.id,
         values
       )
       .then((response) => {
@@ -259,7 +264,7 @@ export default function ProductsCRUD() {
 
   const deleteProduct = (id: any) => {
     axios
-      .delete("https://web-server3.onrender.com/products/" + id)
+      .delete("https://web-server-test-jxaf.onrender.com//products/" + id)
       .then((response) => {
         console.log(response);
         setRefresh((f) => f + 1);

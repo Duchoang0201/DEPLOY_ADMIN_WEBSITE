@@ -65,7 +65,7 @@ const ProductsCRUD = () => {
   const [file, setFile] = useState<any>();
 
   //API_URL
-  const API_URL = "https://web-server3.onrender.com/products";
+  const API_URL = "https://web-server-test-jxaf.onrender.com//products";
   const [categories, setCategories] = useState<Array<any>>([]);
   const [suppliers, setSuppliers] = useState([]);
 
@@ -259,7 +259,10 @@ const ProductsCRUD = () => {
             {record.imageUrl && (
               <div className="d-flex justify-content-between">
                 <img
-                  src={"https://web-server3.onrender.com/" + record.imageUrl}
+                  src={
+                    "https://web-server-test-jxaf.onrender.com//" +
+                    record.imageUrl
+                  }
                   style={{ height: 60 }}
                   alt="record.imageUrl"
                 />
@@ -649,7 +652,7 @@ const ProductsCRUD = () => {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://web-server3.onrender.com/upload/products/${record._id}/images`}
+            action={`https://web-server-test-jxaf.onrender.com//upload/products/${record._id}/images`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -701,7 +704,7 @@ const ProductsCRUD = () => {
   //CALL API CATEGORY
   useEffect(() => {
     axios
-      .get("https://web-server3.onrender.com/categories")
+      .get("https://web-server-test-jxaf.onrender.com//categories")
       .then((res) => {
         setCategories(res.data.results);
       })
@@ -711,7 +714,7 @@ const ProductsCRUD = () => {
   //CALL API SUPPLIER
   useEffect(() => {
     axios
-      .get("https://web-server3.onrender.com/suppliers")
+      .get("https://web-server-test-jxaf.onrender.com//suppliers")
       .then((res) => {
         setSuppliers(res.data.results);
       })
@@ -884,7 +887,7 @@ const ProductsCRUD = () => {
     .filter(Boolean)
     .join("&");
 
-  let URL_FILTER = `https://web-server3.onrender.com/products?${queryParams}&limit=10`;
+  let URL_FILTER = `https://web-server-test-jxaf.onrender.com//products?${queryParams}&limit=10`;
   // CALL API FILTER PRODUCT DEPEND ON QUERY
   useEffect(() => {
     axios
@@ -1360,12 +1363,12 @@ const ProductsCRUD = () => {
             <Image
               width={200}
               height={200}
-              src={`https://web-server3.onrender.com/${updateId?.imageUrl}`}
+              src={`https://web-server-test-jxaf.onrender.com//${updateId?.imageUrl}`}
             />
             <Upload
               showUploadList={false}
               name="file"
-              action={`https://web-server3.onrender.com/upload/products/${updateId?._id}/image`}
+              action={`https://web-server-test-jxaf.onrender.com//upload/products/${updateId?._id}/image`}
               headers={{ authorization: "authorization-text" }}
               onChange={(info) => {
                 if (info.file.status !== "uploading") {
@@ -1397,19 +1400,19 @@ const ProductsCRUD = () => {
                   key={index}
                   width={200}
                   height={200}
-                  src={`https://web-server3.onrender.com/${item}`}
+                  src={`https://web-server-test-jxaf.onrender.com//${item}`}
                 />
               ))} */}
             {updateId && (
               <Upload
                 name="file"
-                action={`https://web-server3.onrender.com/upload/products/${updateId?._id}/images`}
+                action={`https://web-server-test-jxaf.onrender.com//upload/products/${updateId?._id}/images`}
                 listType="picture-card"
                 fileList={updateId?.images?.map((item: any, index: any) => ({
                   uid: `${-index}`,
                   name: `image${index}.png`,
                   status: "done",
-                  url: `https://web-server3.onrender.com/${item}`,
+                  url: `https://web-server-test-jxaf.onrender.com//${item}`,
                 }))}
                 onChange={(record: any) => {
                   if (record.file.status !== "uploading") {
@@ -1418,7 +1421,7 @@ const ProductsCRUD = () => {
                   if (record.file.status === "removed") {
                     const newlistPicture = updateId?.images?.filter(
                       (item: any) =>
-                        `https://web-server3.onrender.com/${item}` !==
+                        `https://web-server-test-jxaf.onrender.com//${item}` !==
                         record.file.url
                     );
                     console.log("««««« newlistPicture »»»»»", newlistPicture);

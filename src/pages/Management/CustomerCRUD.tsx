@@ -49,7 +49,7 @@ function CustomerCRUD() {
   const dateFormat = "DD/MM/YYYY";
 
   // API OF COLLECTIOn
-  let API_URL = "https://web-server3.onrender.com/customers";
+  let API_URL = "https://web-server-test-jxaf.onrender.com//customers";
 
   // MODAL:
   // Modal open Create:
@@ -105,7 +105,7 @@ function CustomerCRUD() {
 
         axios
           .post(
-            `https://web-server3.onrender.com/upload/customers/${_id}/image`,
+            `https://web-server-test-jxaf.onrender.com//upload/customers/${_id}/image`,
             formData
           )
           .then((respose) => {
@@ -356,7 +356,10 @@ function CustomerCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={"https://web-server3.onrender.com/" + record.imageUrl}
+                src={
+                  "https://web-server-test-jxaf.onrender.com//" +
+                  record.imageUrl
+                }
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -582,7 +585,7 @@ function CustomerCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://web-server3.onrender.com/upload/customers/${record._id}/image`}
+            action={`https://web-server-test-jxaf.onrender.com//upload/customers/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {

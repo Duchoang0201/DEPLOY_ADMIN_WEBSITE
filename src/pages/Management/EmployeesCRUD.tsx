@@ -48,7 +48,7 @@ function EmployeeCRUD() {
   const dateFormat = "DD/MM/YYYY";
 
   // API OF COLLECTIOn
-  let API_URL = "https://web-server3.onrender.com/employees";
+  let API_URL = "https://web-server-test-jxaf.onrender.com//employees";
 
   // MODAL:
   // Modal open Create:
@@ -105,7 +105,7 @@ function EmployeeCRUD() {
 
         axios
           .post(
-            `https://web-server3.onrender.com/upload/employees/${_id}/image`,
+            `https://web-server-test-jxaf.onrender.com//upload/employees/${_id}/image`,
             formData
           )
           .then((respose) => {
@@ -358,7 +358,10 @@ function EmployeeCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={"https://web-server3.onrender.com/" + record.imageUrl}
+                src={
+                  "https://web-server-test-jxaf.onrender.com//" +
+                  record.imageUrl
+                }
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -586,7 +589,7 @@ function EmployeeCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://web-server3.onrender.com/upload/employees/${record._id}/image`}
+            action={`https://web-server-test-jxaf.onrender.com//upload/employees/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
