@@ -8,7 +8,7 @@ const HomePage = () => {
   const socket = useRef<any>();
 
   useEffect(() => {
-    socket.current = io("http://localhost:8888");
+    socket.current = io("https://web-server-test-jxaf.onrender.com");
   }, []);
 
   const [data1, setData1] = useState([]);

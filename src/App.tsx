@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const socket = useRef<any>();
 
   useEffect(() => {
-    socket.current = io("http://localhost:8888");
+    socket.current = io("https://web-server-test-jxaf.onrender.com");
   }, []);
 
   // Function reresh to clear local storage
