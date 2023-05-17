@@ -34,7 +34,7 @@ function CategoryCRUD() {
   // Date Picker Setting
 
   // API OF
-  let API_URL = "https://web-server-test-jxaf.onrender.com/categories";
+  let API_URL = "http://localhost:9000/categories";
 
   // MODAL:
   // Modal open Create:
@@ -411,6 +411,8 @@ function CategoryCRUD() {
                 onClick={() => {
                   setCategoriesName("");
                   setCategoryDescription("");
+                  setIsActive("");
+                  setIsDelete("");
                 }}
                 icon={<ClearOutlined />}
               >

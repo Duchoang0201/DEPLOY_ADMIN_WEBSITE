@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { Column } from "@ant-design/plots";
 import { Bar } from "@ant-design/plots";
 import { Col, Row } from "antd";
-import { io } from "socket.io-client";
+import io from "socket.io-client";
 
 const HomePage = () => {
   const socket = useRef<any>();
-
   useEffect(() => {
-    socket.current = io("https://web-server-test-jxaf.onrender.com");
+    socket.current = io("http://localhost:9000");
   }, []);
+  useEffect(() => {}, []);
 
   const [data1, setData1] = useState([]);
   const [data2, setData2] = useState([]);
@@ -22,7 +22,7 @@ const HomePage = () => {
   }, []);
 
   const asyncFetch1 = () => {
-    fetch("https://web-server-test-jxaf.onrender.com/questions/24")
+    fetch("http://localhost:9000/questions/24")
       .then((response) => response.json())
       .then((json) => setData1(json))
       .catch((error) => {
@@ -62,7 +62,7 @@ const HomePage = () => {
   };
 
   const asyncFetch2 = () => {
-    fetch("https://web-server-test-jxaf.onrender.com/questions/18")
+    fetch("http://localhost:9000/questions/18")
       .then((response) => response.json())
       .then((json) => setData2(json))
       .catch((error) => {
@@ -80,7 +80,7 @@ const HomePage = () => {
   };
 
   const asyncFetch3 = () => {
-    fetch("https://web-server-test-jxaf.onrender.com/questions/19")
+    fetch("http://localhost:9000/questions/19")
       .then((response) => response.json())
       .then((json) => setData3(json))
       .catch((error) => {

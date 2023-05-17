@@ -48,7 +48,7 @@ function EmployeeCRUD() {
   const dateFormat = "DD/MM/YYYY";
 
   // API OF COLLECTIOn
-  let API_URL = "https://web-server-test-jxaf.onrender.com/employees";
+  let API_URL = "http://localhost:9000/employees";
 
   // MODAL:
   // Modal open Create:
@@ -57,6 +57,7 @@ function EmployeeCRUD() {
   // Modal open Update:
   const [open, setOpen] = useState(false);
 
+  //Model open Confirm Delete
   //Delete Item
   const [deleteItem, setDeleteItem] = useState<any>();
 
@@ -104,10 +105,7 @@ function EmployeeCRUD() {
         formData.append("file", file);
 
         axios
-          .post(
-            `https://web-server-test-jxaf.onrender.com/upload/employees/${_id}/image`,
-            formData
-          )
+          .post(`http://localhost:9000/upload/employees/${_id}/image`, formData)
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
@@ -358,9 +356,7 @@ function EmployeeCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={
-                  "https://web-server-test-jxaf.onrender.com/" + record.imageUrl
-                }
+                src={"http://localhost:9000" + record.imageUrl}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -588,7 +584,7 @@ function EmployeeCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://web-server-test-jxaf.onrender.com/upload/employees/${record._id}/image`}
+            action={`http://localhost:9000/upload/employees/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {

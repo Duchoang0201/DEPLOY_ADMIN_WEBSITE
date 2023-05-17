@@ -20,7 +20,6 @@ import {
   SendOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import VirtualList from "rc-virtual-list";
 import { format } from "timeago.js";
 // Socket;
 import { io } from "socket.io-client";
@@ -64,7 +63,7 @@ const Messages: React.FC<any> = () => {
 
   const socket = useRef<any>();
   useEffect(() => {
-    socket.current = io("https://web-server-test-jxaf.onrender.com");
+    socket.current = io("http://localhost:8888");
     socket.current.on("getMessage", (data: any) => {
       console.log("««««« data »»»»»", data);
       if (data == null) {
@@ -95,9 +94,7 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com/employees`
-        );
+        const res = await axios.get(`http://localhost:9000/employees`);
         const dataIn = res.data.results.filter(
           (item: any) => item._id !== auth.payload._id
         );
@@ -112,7 +109,7 @@ const Messages: React.FC<any> = () => {
     const getConversations = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com/conversations/${auth.payload._id}`
+          `http://localhost:9000/conversations/${auth.payload._id}`
         );
 
         setConversations(res.data);
@@ -132,7 +129,7 @@ const Messages: React.FC<any> = () => {
       };
       try {
         const res = await axios.post(
-          `https://web-server-test-jxaf.onrender.com/conversations`,
+          `http://localhost:9000/conversations`,
           conversationCreate
         );
         setRefresh((f) => f + 1);
@@ -157,7 +154,7 @@ const Messages: React.FC<any> = () => {
     const getUser = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com/employees/${friendId}`
+          `http://localhost:9000/employees/${friendId}`
         );
         setDataUserMenu(res.data.results);
       } catch (error) {}
@@ -208,7 +205,7 @@ const Messages: React.FC<any> = () => {
 
     try {
       const res = await axios.post(
-        "https://web-server-test-jxaf.onrender.com/messages",
+        "http://localhost:9000/messages",
         messageSend
       );
       setRefresh((f) => f + 1);
@@ -229,7 +226,7 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com/messages/${conversationCurrent._id}`
+          `http://localhost:9000/messages/${conversationCurrent._id}`
         );
         setMessages(res.data);
       } catch (error) {}
@@ -271,7 +268,7 @@ const Messages: React.FC<any> = () => {
 
           try {
             const response = await axios.get(
-              `https://web-server-test-jxaf.onrender.com/employees/${otherMembers}`
+              `http://localhost:9000/employees/${otherMembers}`
             );
             return response.data;
           } catch (error) {

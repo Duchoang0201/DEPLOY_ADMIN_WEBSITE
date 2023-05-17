@@ -1,39 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Affix,
-  Button,
-  Card,
-  Collapse,
-  Form,
-  Input,
-  Popover,
-  Select,
-  Space,
-} from "antd";
+import { Affix, Button, Card, Form, Input, Popover, Select, Space } from "antd";
 import { EditFilled, WechatOutlined } from "@ant-design/icons";
 import axios from "axios";
-import { wait } from "@testing-library/user-event/dist/utils";
 
 const MessageBox: React.FC = () => {
   const [users, setUsers] = useState<any>();
-  const [userId, setUserId] = useState("");
   const [userName, setUserName] = useState("");
 
-  const [coversations, setConversations] = useState([]);
-
-  useEffect(() => {
-    const getConversations = async () => {
-      try {
-        const res = await axios.get(
-          "https://web-server-test-jxaf.onrender.com/conversations"
-        );
-        setConversations(res.data);
-      } catch (error) {}
-    };
-    getConversations();
-  }, [users]);
-
-  const API_USERS = "https://web-server-test-jxaf.onrender.com/employees";
+  const API_USERS = "http://localhost:9000/employees";
   useEffect(() => {
     axios
       .get(API_USERS)
@@ -45,10 +19,8 @@ const MessageBox: React.FC = () => {
 
   const onSearchUser = useCallback((record: any, label: any) => {
     if (record) {
-      setUserId(label.value);
       setUserName(label.label);
     } else {
-      setUserId("");
       setUserName("");
     }
   }, []);

@@ -51,8 +51,9 @@ export default function ProductsCRUD() {
       render: (text: any, record: any, index: any) => {
         return (
           <img
-            src={"https://web-server-test-jxaf.onrender.com/" + text}
+            src={"http://localhost:9000" + text}
             style={{ height: 60 }}
+            alt="imag"
           />
         );
       },
@@ -148,9 +149,7 @@ export default function ProductsCRUD() {
               showUploadList={false}
               name="file"
               action={
-                "https://web-server-test-jxaf.onrender.com/upload/products/" +
-                record._id +
-                "/image"
+                "http://localhost:9000/upload/products/" + record._id + "/image"
               }
               headers={{ authorization: "authorization-text" }}
               onChange={(info) => {
@@ -195,45 +194,37 @@ export default function ProductsCRUD() {
   ];
 
   React.useEffect(() => {
-    axios
-      .get("https://web-server-test-jxaf.onrender.com/suppliers")
-      .then((response) => {
-        setSuppliers(response.data.results);
-        // console.log(response.data.results);
-      });
+    axios.get("http://localhost:9000/suppliers").then((response) => {
+      setSuppliers(response.data.results);
+      // console.log(response.data.results);
+    });
   }, []);
 
   React.useEffect(() => {
-    axios
-      .get("https://web-server-test-jxaf.onrender.com/categories")
-      .then((response) => {
-        setCategories(response.data.results);
-        // console.log(response.data.results);
-      });
+    axios.get("http://localhost:9000/categories").then((response) => {
+      setCategories(response.data.results);
+      // console.log(response.data.results);
+    });
   }, []);
 
   React.useEffect(() => {
-    axios
-      .get("https://web-server-test-jxaf.onrender.com/products")
-      .then((response) => {
-        setProducts(response.data.results);
-        // console.log(response.data.results);
-      });
+    axios.get("http://localhost:9000/products").then((response) => {
+      setProducts(response.data.results);
+      // console.log(response.data.results);
+    });
   }, [refresh]);
 
   const onFinish = (values: any) => {
     console.log(values);
     // CODE HERE ...
     // CALL API TO CREATE CUSTOMER
-    axios
-      .post("https://web-server-test-jxaf.onrender.com/products", values)
-      .then((response) => {
-        if (response.status === 201) {
-          createForm.resetFields();
-          setRefresh((f) => f + 1);
-        }
-        console.log(response.data.results);
-      });
+    axios.post("http://localhost:9000/products", values).then((response) => {
+      if (response.status === 201) {
+        createForm.resetFields();
+        setRefresh((f) => f + 1);
+      }
+      console.log(response.data.results);
+    });
   };
 
   const onEditFinish = (values: any) => {
@@ -241,11 +232,7 @@ export default function ProductsCRUD() {
     // CODE HERE ...
     // CALL API TO CREATE CUSTOMER
     axios
-      .patch(
-        "https://web-server-test-jxaf.onrender.com/products/" +
-          selectedProduct.id,
-        values
-      )
+      .patch("http://localhost:9000/products/" + selectedProduct.id, values)
       .then((response) => {
         if (response.status === 200) {
           updateForm.resetFields();
@@ -263,12 +250,10 @@ export default function ProductsCRUD() {
   };
 
   const deleteProduct = (id: any) => {
-    axios
-      .delete("https://web-server-test-jxaf.onrender.com/products/" + id)
-      .then((response) => {
-        console.log(response);
-        setRefresh((f) => f + 1);
-      });
+    axios.delete("http://localhost:9000/products/" + id).then((response) => {
+      console.log(response);
+      setRefresh((f) => f + 1);
+    });
   };
 
   const [createForm] = Form.useForm();

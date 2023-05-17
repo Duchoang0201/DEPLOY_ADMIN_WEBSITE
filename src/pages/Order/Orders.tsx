@@ -20,11 +20,9 @@ export default function Orders() {
   // Products
   const [products, setProducts] = useState<any>([]);
   useEffect(() => {
-    axios
-      .get("https://web-server-test-jxaf.onrender.com/products")
-      .then((response) => {
-        setProducts(response.data.results);
-      });
+    axios.get("http://localhost:9000/products").then((response) => {
+      setProducts(response.data.results);
+    });
   }, [refresh]);
 
   const [orders, setOrders] = useState<any>([]);
@@ -40,7 +38,7 @@ export default function Orders() {
       (order: any) => order.id === selectedOrder?.id
     );
     setSelectedOrder(updatedSelectedOrder || null);
-  }, [orders, selectedOrder?.id]);
+  }, [orders, selectedOrder]);
 
   const handleDelete = async (record: any, index: any) => {
     const currentProduct = record;

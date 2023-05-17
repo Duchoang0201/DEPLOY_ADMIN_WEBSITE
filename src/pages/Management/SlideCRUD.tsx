@@ -9,9 +9,9 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
-  DatePicker,
   Form,
   Input,
+  InputNumber,
   message,
   Modal,
   Pagination,
@@ -32,7 +32,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import moment from "moment";
 moment().format();
-function CustomerCRUD() {
+function SlidesCRUD() {
   //Set File avatar
 
   const [file, setFile] = useState<any>(null);
@@ -43,13 +43,10 @@ function CustomerCRUD() {
 
   // Date Picker Setting
 
-  const { RangePicker } = DatePicker;
   dayjs.extend(customParseFormat);
 
-  const dateFormat = "DD/MM/YYYY";
-
   // API OF COLLECTIOn
-  let API_URL = "http://localhost:9000/customers";
+  let API_URL = "http://localhost:9000/slides";
 
   // MODAL:
   // Modal open Create:
@@ -64,7 +61,7 @@ function CustomerCRUD() {
   //For fillter:
 
   //Data fillter
-  const [customersTEST, setCustomersTEST] = useState<any>([]);
+  const [slidesTEST, setSlidesTEST] = useState<any>([]);
 
   // Change fillter (f=> f+1)
 
@@ -90,8 +87,8 @@ function CustomerCRUD() {
   const handleCreate = (record: any) => {
     record.createdBy = auth.payload;
     record.createdDate = new Date().toISOString();
-    if (record.Locked === undefined) {
-      record.Locked = false;
+    if (record.active === undefined) {
+      record.active = false;
     }
 
     axios
@@ -104,14 +101,16 @@ function CustomerCRUD() {
         formData.append("file", file);
 
         axios
-          .post(`http://localhost:9000/upload/customers/${_id}/image`, formData)
+          .post(`http://localhost:9000/upload/slides/${_id}/image`, formData)
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
-            setRefresh((f) => f + 1);
-            setOpenCreate(false);
             setFile(null);
+            setOpenCreate(false);
           });
+        setTimeout(() => {
+          setRefresh((f) => f + 1);
+        }, 4000);
       })
       .catch((err) => {
         console.log(err);
@@ -135,11 +134,9 @@ function CustomerCRUD() {
     record.updatedBy = auth.payload;
     record.updatedDate = new Date().toISOString();
 
-    record.birthday = record.birthday.toISOString();
     axios
       .patch(API_URL + "/" + updateId, record)
       .then((res) => {
-        console.log(res);
         setOpen(false);
         setOpenCreate(false);
         setRefresh((f) => f + 1);
@@ -161,77 +158,36 @@ function CustomerCRUD() {
     }
   }, []);
 
-  //SEARCH DEPEN ON NAME
-  const [customerEmail, setCustomerEmail] = useState("");
+  //SEARCH DEPEN ON TITLE
+  const [slideTitle, setSlideTitle] = useState("");
 
-  const onSearchCustomerEmail = useCallback((value: any) => {
-    console.log(value);
+  const onSearchSlidesTitle = useCallback((value: any) => {
     if (value) {
-      setCustomerEmail(value);
+      setSlideTitle(value);
     } else {
-      setCustomerEmail("");
+      setSlideTitle("");
     }
   }, []);
 
   //SEARCH DEPEN ON NAME
-  const [customerFirstName, setCustomerFirstName] = useState("");
+  const [slideSummary, setSlideSummary] = useState("");
 
-  const onSearchCustomerFirstName = useCallback((value: any) => {
-    console.log(value);
+  const onSearchSlidesSumary = useCallback((value: any) => {
     if (value) {
-      setCustomerFirstName(value);
+      setSlideSummary(value);
     } else {
-      setCustomerFirstName("");
+      setSlideSummary("");
     }
   }, []);
 
   //SEARCH DEPEN ON LastName
-  const [customerLastName, setCustomerLastName] = useState("");
+  const [slideUrl, setSlideUrl] = useState("");
 
-  const onSearchCustomerLastName = (record: any) => {
+  const onSearchSlidesUrl = (record: any) => {
     if (record) {
-      setCustomerLastName(record);
+      setSlideUrl(record);
     } else {
-      setCustomerLastName("");
-    }
-  };
-
-  //SEARCH DEPEN ON PhoneNumber
-  const [customerPhoneNumber, setCustomerPhoneNumber] = useState("");
-
-  const onSearchCustomerPhoneNumber = (record: any) => {
-    if (record) {
-      setCustomerPhoneNumber(record);
-    } else {
-      setCustomerPhoneNumber("");
-    }
-  };
-
-  //SEARCH DEPEN ON Address
-  const [customerAddress, setCustomerAddress] = useState("");
-
-  const onSearchCustomerAddress = (record: any) => {
-    if (record) {
-      setCustomerAddress(record);
-    } else {
-      setCustomerAddress("");
-    }
-  };
-  //SEARCH DEPEN ON Birthday
-  const [customerBirthdayFrom, setCustomerBirthdayFrom] = useState("");
-  const [customerBirthdayTo, setCustomerBirthdayTo] = useState("");
-
-  const onSearchCustomerBirthday = (record: any) => {
-    const formattedRecord = record.map((date: any) =>
-      dayjs(date).format("YYYY/MM/DD")
-    );
-    console.log("««««« formattedRecord »»»»»", formattedRecord);
-    if (formattedRecord) {
-      setCustomerBirthdayFrom(formattedRecord[0]);
-      setCustomerBirthdayTo(formattedRecord[1]);
-    } else {
-      setCustomerBirthdayFrom("");
-      setCustomerBirthdayTo("");
+      setSlideUrl("");
     }
   };
 
@@ -246,14 +202,10 @@ function CustomerCRUD() {
   };
   //GET DATA ON FILLTER
   const URL_FILTER = `${API_URL}?${[
-    customerFirstName && `&firstName=${customerFirstName}`,
-    customerLastName && `&lastName=${customerLastName}`,
-    customerEmail && `&email=${customerEmail}`,
-    customerPhoneNumber && `&phoneNumber=${customerPhoneNumber}`,
-    customerAddress && `&address=${customerAddress}`,
-    customerBirthdayFrom && `&birthdayFrom=${customerBirthdayFrom}`,
-    customerBirthdayTo && `&birthdayTo=${customerBirthdayTo}`,
-    isLocked && `&Locked=${isLocked}`,
+    slideTitle && `&title=${slideTitle}`,
+    slideSummary && `&summary=${slideSummary}`,
+    slideUrl && `&url=${slideUrl}`,
+    isLocked && `&active=${isLocked}`,
     skip && `&skip=${skip}`,
   ]
     .filter(Boolean)
@@ -263,7 +215,7 @@ function CustomerCRUD() {
     axios
       .get(URL_FILTER)
       .then((res) => {
-        setCustomersTEST(res.data.results);
+        setSlidesTEST(res.data.results);
         setPages(res.data.amountResults);
       })
       .catch((err) => console.log(err));
@@ -292,12 +244,12 @@ function CustomerCRUD() {
             <Space>
               {" "}
               {currentPage === 1 ? index + 1 : index + currentPage * 10 - 9}
-              {record.Locked === false && (
+              {record.active === false && (
                 <span style={{ fontSize: "16px", color: "#08c" }}>
                   <CheckCircleOutlined /> Active
                 </span>
               )}
-              {record.Locked === true && (
+              {record.active === true && (
                 <span style={{ fontSize: "16px", color: "#dc3545" }}>
                   <CheckCircleOutlined /> Locked
                 </span>
@@ -363,27 +315,27 @@ function CustomerCRUD() {
         );
       },
     },
-    //Email
+    //Title
     {
       title: () => {
         return (
           <div>
-            {customerEmail ? (
-              <div className="text-danger">Email</div>
+            {slideTitle ? (
+              <div className="text-danger">Title</div>
             ) : (
-              <div className="secondary">Email</div>
+              <div className="secondary">Title</div>
             )}
           </div>
         );
       },
-      dataIndex: "email",
-      key: "email",
+      dataIndex: "title",
+      key: "title",
       filterDropdown: () => {
         return (
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              onSearch={onSearchCustomerEmail}
+              onSearch={onSearchSlidesTitle}
               placeholder="input search text"
               style={{ width: 200 }}
             />
@@ -391,152 +343,58 @@ function CustomerCRUD() {
         );
       },
     },
-    //First Name
+    //Summary
     {
       title: () => {
         return (
           <div>
-            {customerFirstName ? (
-              <div className="text-danger">First name</div>
+            {slideSummary ? (
+              <div className="text-danger">Summary</div>
             ) : (
-              <div className="secondary">First name</div>
+              <div className="secondary">Summary</div>
             )}
           </div>
         );
       },
-      dataIndex: "firstName",
-      key: "firstName",
+      dataIndex: "summary",
+      key: "summary",
       filterDropdown: () => {
         return (
           <div style={{ padding: 8 }}>
             <Search
               allowClear
               placeholder="input search text"
-              onSearch={onSearchCustomerFirstName}
+              onSearch={onSearchSlidesSumary}
               style={{ width: 200 }}
             />
           </div>
         );
       },
     },
-    //Last Name
+
+    //URL
     {
       title: () => {
         return (
           <div>
-            {customerLastName ? (
-              <div className="text-danger">Last name</div>
+            {slideUrl ? (
+              <div className="text-danger">URL</div>
             ) : (
-              <div className="secondary">Last name</div>
+              <div className="secondary">URL</div>
             )}
           </div>
         );
       },
-      dataIndex: "lastName",
-      key: "lastName",
+      dataIndex: "url",
+      key: "url",
       filterDropdown: () => {
         return (
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              onSearch={onSearchCustomerLastName}
+              onSearch={onSearchSlidesUrl}
               placeholder="input search text"
               style={{ width: 200 }}
-            />
-          </div>
-        );
-      },
-    },
-    //Phone number
-    {
-      title: () => {
-        return (
-          <div>
-            {customerPhoneNumber ? (
-              <div className="text-danger">Phone Number</div>
-            ) : (
-              <div className="secondary">Phone Number</div>
-            )}
-          </div>
-        );
-      },
-      dataIndex: "phoneNumber",
-      key: "phoneNumber",
-      filterDropdown: () => {
-        return (
-          <div style={{ padding: 8 }}>
-            <Search
-              onSearch={onSearchCustomerPhoneNumber}
-              allowClear
-              placeholder="input search text"
-              style={{ width: 200 }}
-            />
-          </div>
-        );
-      },
-    },
-    //Address
-    {
-      title: () => {
-        return (
-          <div>
-            {customerAddress ? (
-              <div className="text-danger">Address</div>
-            ) : (
-              <div className="secondary">Address</div>
-            )}
-          </div>
-        );
-      },
-      dataIndex: "address",
-      key: "address",
-      filterDropdown: () => {
-        return (
-          <div style={{ padding: 8 }}>
-            <Search
-              allowClear
-              onSearch={onSearchCustomerAddress}
-              placeholder="input search text"
-              style={{ width: 200 }}
-            />
-          </div>
-        );
-      },
-    },
-    //Birthday
-    {
-      title: () => {
-        return (
-          <div>
-            {customerBirthdayFrom || customerBirthdayTo ? (
-              <div className="text-danger">Birthday</div>
-            ) : (
-              <div className="secondary">Birthday</div>
-            )}
-          </div>
-        );
-      },
-      dataIndex: "birthday",
-      key: "birthday",
-      render: (birthday: any) => {
-        const formattedBirthday = dayjs(birthday).format("DD/MM/YYYY");
-        return <span>{formattedBirthday}</span>;
-      },
-      filterDropdown: () => {
-        return (
-          <div style={{ padding: 8 }}>
-            <RangePicker
-              onCalendarChange={() => {
-                setCustomerBirthdayFrom("");
-                setCustomerBirthdayTo("");
-              }}
-              allowClear
-              defaultValue={[
-                dayjs("01/01/1900", dateFormat),
-                dayjs("01/01/2023", dateFormat),
-              ]}
-              format={dateFormat}
-              onChange={onSearchCustomerBirthday}
             />
           </div>
         );
@@ -580,7 +438,7 @@ function CustomerCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`http://localhost:9000/upload/customers/${record._id}/image`}
+            action={`http://localhost:9000/upload/slides/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -610,14 +468,9 @@ function CustomerCRUD() {
               <Button
                 style={{ width: "150px" }}
                 onClick={() => {
-                  setCustomerEmail("");
-                  setCustomerFirstName("");
-                  setCustomerLastName("");
-                  setCustomerPhoneNumber("");
-                  setCustomerAddress("");
-                  setCustomerBirthdayFrom("");
-                  setCustomerBirthdayTo("");
-                  setIsLocked("");
+                  setSlideTitle("");
+                  setSlideSummary("");
+                  onSearchSlidesUrl("");
                 }}
                 icon={<ClearOutlined />}
               >
@@ -630,7 +483,7 @@ function CustomerCRUD() {
                 }}
                 icon={<PlusCircleOutlined />}
               >
-                Add Customer
+                Add Slides
               </Button>
             </Space>
           </>
@@ -641,9 +494,9 @@ function CustomerCRUD() {
 
   return (
     <div>
-      {/* Modal Create A Customers */}
+      {/* Modal Create A Slides */}
       <Modal
-        title={`Create Customers `}
+        title={`Create Slides `}
         open={openCreate}
         onCancel={() => {
           setOpenCreate(false);
@@ -655,170 +508,125 @@ function CustomerCRUD() {
       >
         <div className="container ">
           <Form form={createForm} name="createForm" onFinish={handleCreate}>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Email"
-              name="email"
-              rules={[
-                {
-                  type: "email",
-                  message: "Please enter a valid email address!",
-                },
-                { required: true, message: "Please input Email!" },
-              ]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="First name"
-              name="firstName"
-              rules={[{ required: true, message: "Please input First name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Last name"
-              name="lastName"
-              rules={[{ required: true, message: "Please input Last name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Phone number"
-              name="phoneNumber"
-              rules={[
-                { required: true, message: "Please input Phone number!" },
-              ]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Address"
-              name="address"
-              rules={[{ required: true, message: "Please input Address!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Password"
-              name="password"
-              rules={[{ required: true, message: "Please input Address!" }]}
-            >
-              <Input.Password />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Locked"
-              name="Locked"
-              valuePropName="checked"
-            >
-              <Switch />
-            </FormItem>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Note"
-              name="note"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              label="Birthday"
-              name="birthday"
-              rules={[{ required: true, message: "Please input Birthday!" }]}
-            >
-              <DatePicker placement="bottomLeft" format="DD/MM/YYYY" />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              label="Hình minh họa"
-              name="file"
-            >
-              <Upload
-                maxCount={1}
-                listType="picture-card"
-                showUploadList={true}
-                beforeUpload={(file) => {
-                  setFile(file);
-                  return false;
+            <div className="row">
+              <FormItem
+                labelCol={{
+                  span: 6,
                 }}
-                onRemove={() => {
-                  setFile("");
+                wrapperCol={{
+                  span: 16,
                 }}
+                hasFeedback
+                label="Title"
+                name="title"
+                rules={[{ required: true, message: "Please input Title!" }]}
               >
-                {!file ? (
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Upload</div>
-                  </div>
-                ) : (
-                  ""
-                )}
-              </Upload>
-            </Form.Item>
+                <Input />
+              </FormItem>
+              <FormItem
+                labelCol={{
+                  span: 6,
+                }}
+                wrapperCol={{
+                  span: 16,
+                }}
+                hasFeedback
+                label="Summary"
+                name="summary"
+                rules={[{ required: true, message: "Please input Summary!" }]}
+              >
+                <Input />
+              </FormItem>
+              <FormItem
+                labelCol={{
+                  span: 6,
+                }}
+                wrapperCol={{
+                  span: 16,
+                }}
+                hasFeedback
+                label="URL"
+                name="url"
+                rules={[{ required: true, message: "Please input URL!" }]}
+              >
+                <Input />
+              </FormItem>
+
+              <FormItem
+                labelCol={{
+                  span: 6,
+                }}
+                wrapperCol={{
+                  span: 16,
+                }}
+                hasFeedback
+                label="Sort Oder"
+                name="sortOder"
+                rules={[{ required: true, message: "Please input Sort Oder!" }]}
+              >
+                <InputNumber />
+              </FormItem>
+
+              <FormItem
+                labelCol={{
+                  span: 6,
+                }}
+                wrapperCol={{
+                  span: 16,
+                }}
+                hasFeedback
+                label="Active"
+                name="active"
+                valuePropName="checked"
+              >
+                <Switch />
+              </FormItem>
+              <Form.Item
+                labelCol={{
+                  span: 6,
+                }}
+                wrapperCol={{
+                  span: 16,
+                }}
+                hasFeedback
+                label="Note"
+                name="note"
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
+                labelCol={{
+                  span: 6,
+                }}
+                wrapperCol={{
+                  span: 16,
+                }}
+                label="Hình minh họa"
+                name="file"
+              >
+                <Upload
+                  maxCount={1}
+                  listType="picture-card"
+                  showUploadList={true}
+                  beforeUpload={(file) => {
+                    setFile(file);
+                    return false;
+                  }}
+                  onRemove={() => {
+                    setFile("");
+                  }}
+                >
+                  {!file ? (
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Upload</div>
+                    </div>
+                  ) : (
+                    ""
+                  )}
+                </Upload>
+              </Form.Item>
+            </div>
           </Form>
         </div>
       </Modal>
@@ -827,15 +635,15 @@ function CustomerCRUD() {
 
       <div>
         <Table
-          // loading={!customersTEST ? true : false}
+          // loading={!slidesTEST ? true : false}
           loading={loadingTable}
           rowKey="_id"
           columns={columns}
-          dataSource={customersTEST}
+          dataSource={slidesTEST}
           pagination={false}
           scroll={{ x: "max-content", y: 610 }}
           rowClassName={(record) => {
-            return record.Locked === true
+            return record.active === true
               ? "text-danger bg-success-subtle"
               : "";
           }}
@@ -853,7 +661,7 @@ function CustomerCRUD() {
       {/* Model Update */}
       <Modal
         open={open}
-        title="Update Customer"
+        title="Update Slides"
         onCancel={() => {
           setOpen(false);
         }}
@@ -865,94 +673,92 @@ function CustomerCRUD() {
           <div className="row">
             <FormItem
               labelCol={{
-                span: 8,
+                span: 6,
               }}
               wrapperCol={{
                 span: 16,
               }}
               hasFeedback
-              label="Email"
-              name="email"
-              rules={[{ required: true, message: "Please input Email!" }]}
+              label="Title"
+              name="title"
+              rules={[{ required: true, message: "Please input Title!" }]}
             >
               <Input />
             </FormItem>
             <FormItem
               labelCol={{
-                span: 8,
+                span: 6,
               }}
               wrapperCol={{
                 span: 16,
               }}
               hasFeedback
-              label="First name"
-              name="firstName"
-              rules={[{ required: true, message: "Please input First name!" }]}
+              label="Summary"
+              name="summary"
+              rules={[{ required: true, message: "Please input Summary!" }]}
             >
               <Input />
             </FormItem>
             <FormItem
               labelCol={{
-                span: 8,
+                span: 6,
               }}
               wrapperCol={{
                 span: 16,
               }}
               hasFeedback
-              label="Last name"
-              name="lastName"
-              rules={[{ required: true, message: "Please input Last name!" }]}
+              label="URL"
+              name="url"
+              rules={[{ required: true, message: "Please input URL!" }]}
             >
               <Input />
             </FormItem>
             <FormItem
               labelCol={{
-                span: 8,
+                span: 6,
               }}
               wrapperCol={{
                 span: 16,
               }}
               hasFeedback
-              label="Phone number"
-              name="phoneNumber"
-              rules={[
-                { required: true, message: "Please input Phone number!" },
-              ]}
+              label="Image Url"
+              name="imageUrl"
+              rules={[{ required: true, message: "Please input Image Url!" }]}
             >
               <Input />
             </FormItem>
             <FormItem
               labelCol={{
-                span: 8,
+                span: 6,
               }}
               wrapperCol={{
                 span: 16,
               }}
               hasFeedback
-              label="Address"
-              name="address"
-              rules={[{ required: true, message: "Please input Address!" }]}
+              label="Sort Oder"
+              name="sortOder"
+              rules={[{ required: true, message: "Please input Sort Oder!" }]}
             >
               <Input />
             </FormItem>
 
             <FormItem
               labelCol={{
-                span: 8,
+                span: 6,
               }}
               wrapperCol={{
                 span: 16,
               }}
               hasFeedback
-              label="Locked"
-              name="Locked"
+              label="Active"
+              name="active"
               valuePropName="checked"
             >
               <Switch />
             </FormItem>
             <Form.Item
               labelCol={{
-                span: 7,
+                span: 6,
               }}
               wrapperCol={{
                 span: 16,
@@ -963,19 +769,6 @@ function CustomerCRUD() {
             >
               <Input />
             </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              label="Birthday"
-              name="birthday"
-              rules={[{ required: true, message: "Please input Birthday!" }]}
-            >
-              <DatePicker placement="bottomLeft" format="DD/MM/YYYY" />
-            </Form.Item>
           </div>
         </Form>
       </Modal>
@@ -983,4 +776,4 @@ function CustomerCRUD() {
   );
 }
 
-export default CustomerCRUD;
+export default SlidesCRUD;

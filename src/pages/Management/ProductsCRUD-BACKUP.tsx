@@ -65,7 +65,7 @@ const ProductsCRUD = () => {
   const [file, setFile] = useState<any>();
 
   //API_URL
-  const API_URL = "https://web-server-test-jxaf.onrender.com/products";
+  const API_URL = "http://localhost:9000/products";
   const [categories, setCategories] = useState<Array<any>>([]);
   const [suppliers, setSuppliers] = useState([]);
 
@@ -156,7 +156,7 @@ const ProductsCRUD = () => {
       (product: any) => product._id === updateId?._id
     );
     setUpdateId(updatedSelectedOrder || null);
-  }, [productsTEST]);
+  }, [productsTEST, updateId]);
 
   //Columns of TABLE ANT_DESIGN
   const columns = [
@@ -259,10 +259,7 @@ const ProductsCRUD = () => {
             {record.imageUrl && (
               <div className="d-flex justify-content-between">
                 <img
-                  src={
-                    "https://web-server-test-jxaf.onrender.com/" +
-                    record.imageUrl
-                  }
+                  src={"http://localhost:9000" + record.imageUrl}
                   style={{ height: 60 }}
                   alt="record.imageUrl"
                 />
@@ -652,7 +649,7 @@ const ProductsCRUD = () => {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://web-server-test-jxaf.onrender.com/upload/products/${record._id}/images`}
+            action={`http://localhost:9000/upload/products/${record._id}/images`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -704,7 +701,7 @@ const ProductsCRUD = () => {
   //CALL API CATEGORY
   useEffect(() => {
     axios
-      .get("https://web-server-test-jxaf.onrender.com/categories")
+      .get("http://localhost:9000/categories")
       .then((res) => {
         setCategories(res.data.results);
       })
@@ -714,7 +711,7 @@ const ProductsCRUD = () => {
   //CALL API SUPPLIER
   useEffect(() => {
     axios
-      .get("https://web-server-test-jxaf.onrender.com/suppliers")
+      .get("http://localhost:9000/suppliers")
       .then((res) => {
         setSuppliers(res.data.results);
       })
@@ -887,7 +884,7 @@ const ProductsCRUD = () => {
     .filter(Boolean)
     .join("&");
 
-  let URL_FILTER = `https://web-server-test-jxaf.onrender.com/products?${queryParams}&limit=10`;
+  let URL_FILTER = `http://localhost:9000/products?${queryParams}&limit=10`;
   // CALL API FILTER PRODUCT DEPEND ON QUERY
   useEffect(() => {
     axios
@@ -1363,12 +1360,12 @@ const ProductsCRUD = () => {
             <Image
               width={200}
               height={200}
-              src={`https://web-server-test-jxaf.onrender.com/${updateId?.imageUrl}`}
+              src={`http://localhost:9000${updateId?.imageUrl}`}
             />
             <Upload
               showUploadList={false}
               name="file"
-              action={`https://web-server-test-jxaf.onrender.com/upload/products/${updateId?._id}/image`}
+              action={`http://localhost:9000/upload/products/${updateId?._id}/image`}
               headers={{ authorization: "authorization-text" }}
               onChange={(info) => {
                 if (info.file.status !== "uploading") {
@@ -1400,19 +1397,19 @@ const ProductsCRUD = () => {
                   key={index}
                   width={200}
                   height={200}
-                  src={`https://web-server-test-jxaf.onrender.com/${item}`}
+                  src={`http://localhost:9000${item}`}
                 />
               ))} */}
             {updateId && (
               <Upload
                 name="file"
-                action={`https://web-server-test-jxaf.onrender.com/upload/products/${updateId?._id}/images`}
+                action={`http://localhost:9000/upload/products/${updateId?._id}/images`}
                 listType="picture-card"
                 fileList={updateId?.images?.map((item: any, index: any) => ({
                   uid: `${-index}`,
                   name: `image${index}.png`,
                   status: "done",
-                  url: `https://web-server-test-jxaf.onrender.com/${item}`,
+                  url: `http://localhost:9000${item}`,
                 }))}
                 onChange={(record: any) => {
                   if (record.file.status !== "uploading") {
@@ -1421,8 +1418,7 @@ const ProductsCRUD = () => {
                   if (record.file.status === "removed") {
                     const newlistPicture = updateId?.images?.filter(
                       (item: any) =>
-                        `https://web-server-test-jxaf.onrender.com/${item}` !==
-                        record.file.url
+                        `http://localhost:9000${item}` !== record.file.url
                     );
                     console.log("««««« newlistPicture »»»»»", newlistPicture);
                     axios

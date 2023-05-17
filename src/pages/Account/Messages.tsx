@@ -57,7 +57,7 @@ const Messages: React.FC<any> = () => {
   const socket = useRef<any>();
 
   useEffect(() => {
-    socket.current = io("https://web-server-test-jxaf.onrender.com");
+    socket.current = io("http://localhost:9000");
   }, []);
 
   useEffect(() => {
@@ -106,9 +106,7 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com/employees`
-        );
+        const res = await axios.get(`http://localhost:9000/employees`);
         const dataIn = res.data.results.filter(
           (item: any) => item._id !== auth.payload._id
         );
@@ -123,7 +121,7 @@ const Messages: React.FC<any> = () => {
     const getConversations = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com/conversations/${auth.payload._id}`
+          `http://localhost:9000/conversations/${auth.payload._id}`
         );
 
         setConversations(res.data);
@@ -143,7 +141,7 @@ const Messages: React.FC<any> = () => {
       };
       try {
         const res = await axios.post(
-          `https://web-server-test-jxaf.onrender.com/conversations`,
+          `http://localhost:9000/conversations`,
           conversationCreate
         );
         if (res) {
@@ -175,7 +173,7 @@ const Messages: React.FC<any> = () => {
 
     try {
       const res = await axios.post(
-        "https://web-server-test-jxaf.onrender.com/messages",
+        "http://localhost:9000/messages",
         messageSend
       );
       setRefresh((f) => f + 1);
@@ -196,7 +194,7 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `https://web-server-test-jxaf.onrender.com/messages/${conversationInfor.conversationId}`
+          `http://localhost:9000/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
         console.log("««««« res »»»»»", res.data);
@@ -234,7 +232,7 @@ const Messages: React.FC<any> = () => {
 
           try {
             const response = await axios.get(
-              `https://web-server-test-jxaf.onrender.com/employees/${otherMembers}`
+              `http://localhost:9000/employees/${otherMembers}`
             );
             const friendData = response.data.result; // Assuming the friend data is in the 'result' property
             const friendInfo = {

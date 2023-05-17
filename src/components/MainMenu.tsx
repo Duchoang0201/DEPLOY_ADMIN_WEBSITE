@@ -50,6 +50,14 @@ const MainMenu = () => {
           key: "management/products",
           label: "Products",
         },
+        {
+          key: "management/slides",
+          label: "Slides",
+        },
+        {
+          key: "management/features",
+          label: "Features",
+        },
         auth?.payload?.isAdmin && {
           key: "management/employees",
           label: "Employees",
