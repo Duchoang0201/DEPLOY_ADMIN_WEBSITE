@@ -64,7 +64,7 @@ const Messages: React.FC<any> = () => {
 
   const socket = useRef<any>();
   useEffect(() => {
-    socket.current = io("http://localhost:8888");
+    socket.current = io("https://web-server-test-jxaf.onrender.com");
     socket.current.on("getMessage", (data: any) => {
       console.log("««««« data »»»»»", data);
       if (data == null) {
