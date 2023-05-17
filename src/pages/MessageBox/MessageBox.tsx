@@ -7,7 +7,7 @@ const MessageBox: React.FC = () => {
   const [users, setUsers] = useState<any>();
   const [userName, setUserName] = useState("");
 
-  const API_USERS = "http://localhost:9000/employees";
+  const API_USERS = "https://data-server-shop.onrender.com/employees";
   useEffect(() => {
     axios
       .get(API_USERS)

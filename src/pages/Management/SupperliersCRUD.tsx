@@ -37,7 +37,7 @@ function SupperliersCRUD() {
   const [refresh, setRefresh] = useState(0);
   const { auth } = useAuthStore((state: any) => state);
 
-  let API_URL = "http://localhost:9000/suppliers";
+  let API_URL = "https://data-server-shop.onrender.com/suppliers";
 
   // MODAL:
   // Modal open Create:
@@ -208,7 +208,7 @@ function SupperliersCRUD() {
     setCurrentPage(value);
   };
   //GET DATA ON FILLTER
-  const URL_FILTER = `http://localhost:9000/suppliers?${[
+  const URL_FILTER = `https://data-server-shop.onrender.com/suppliers?${[
     supplierName && `name=${supplierName}`,
     supplierEmail && `email=${supplierEmail}`,
     supplierPhone && `phoneNumber=${supplierPhone}`,

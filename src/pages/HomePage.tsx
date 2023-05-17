@@ -7,7 +7,7 @@ import io from "socket.io-client";
 const HomePage = () => {
   const socket = useRef<any>();
   useEffect(() => {
-    socket.current = io("http://localhost:9000");
+    socket.current = io("https://data-server-shop.onrender.com");
   }, []);
   useEffect(() => {}, []);
 
@@ -22,7 +22,7 @@ const HomePage = () => {
   }, []);
 
   const asyncFetch1 = () => {
-    fetch("http://localhost:9000/questions/24")
+    fetch("https://data-server-shop.onrender.com/questions/24")
       .then((response) => response.json())
       .then((json) => setData1(json))
       .catch((error) => {
@@ -62,7 +62,7 @@ const HomePage = () => {
   };
 
   const asyncFetch2 = () => {
-    fetch("http://localhost:9000/questions/18")
+    fetch("https://data-server-shop.onrender.com/questions/18")
       .then((response) => response.json())
       .then((json) => setData2(json))
       .catch((error) => {
@@ -80,7 +80,7 @@ const HomePage = () => {
   };
 
   const asyncFetch3 = () => {
-    fetch("http://localhost:9000/questions/19")
+    fetch("https://data-server-shop.onrender.com/questions/19")
       .then((response) => response.json())
       .then((json) => setData3(json))
       .catch((error) => {

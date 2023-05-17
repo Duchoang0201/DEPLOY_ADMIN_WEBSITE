@@ -18,7 +18,7 @@ export const useAuthStore = create(
           login: async ({ email, password }: isLogin) => {
             try {
               const response = await axios.post(
-                "http://localhost:9000/employees/login",
+                "https://data-server-shop.onrender.com/employees/login",
                 {
                   email: email,
                   password: password,
@@ -31,7 +31,7 @@ export const useAuthStore = create(
               });
               if (loginData && loginData.payload && loginData.payload._id) {
                 axios.patch(
-                  `http://localhost:9000/employees/${loginData.payload._id}`,
+                  `https://data-server-shop.onrender.com/employees/${loginData.payload._id}`,
                   {
                     LastActivity: new Date(),
                   }
@@ -47,7 +47,7 @@ export const useAuthStore = create(
 
             if (loginData && loginData.payload && loginData.payload._id) {
               axios.patch(
-                `http://localhost:9000/employees/${loginData.payload._id}`,
+                `https://data-server-shop.onrender.com/employees/${loginData.payload._id}`,
                 {
                   LastActivity: new Date(),
                 }

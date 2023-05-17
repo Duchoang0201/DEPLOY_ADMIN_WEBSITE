@@ -48,7 +48,7 @@ function EmployeeCRUD() {
   const dateFormat = "DD/MM/YYYY";
 
   // API OF COLLECTIOn
-  let API_URL = "http://localhost:9000/employees";
+  let API_URL = "https://data-server-shop.onrender.com/employees";
 
   // MODAL:
   // Modal open Create:
@@ -105,7 +105,10 @@ function EmployeeCRUD() {
         formData.append("file", file);
 
         axios
-          .post(`http://localhost:9000/upload/employees/${_id}/image`, formData)
+          .post(
+            `https://data-server-shop.onrender.com/upload/employees/${_id}/image`,
+            formData
+          )
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
@@ -356,7 +359,7 @@ function EmployeeCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={"http://localhost:9000" + record.imageUrl}
+                src={"https://data-server-shop.onrender.com" + record.imageUrl}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -584,7 +587,7 @@ function EmployeeCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`http://localhost:9000/upload/employees/${record._id}/image`}
+            action={`https://data-server-shop.onrender.com/upload/employees/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {

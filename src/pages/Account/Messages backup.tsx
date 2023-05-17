@@ -63,7 +63,7 @@ const Messages: React.FC<any> = () => {
 
   const socket = useRef<any>();
   useEffect(() => {
-    socket.current = io("http://localhost:8888");
+    socket.current = io("https://data-server-shop.onrender.com");
     socket.current.on("getMessage", (data: any) => {
       console.log("««««« data »»»»»", data);
       if (data == null) {
@@ -94,7 +94,9 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const res = await axios.get(`http://localhost:9000/employees`);
+        const res = await axios.get(
+          `https://data-server-shop.onrender.com/employees`
+        );
         const dataIn = res.data.results.filter(
           (item: any) => item._id !== auth.payload._id
         );
@@ -109,7 +111,7 @@ const Messages: React.FC<any> = () => {
     const getConversations = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/conversations/${auth.payload._id}`
+          `https://data-server-shop.onrender.com/conversations/${auth.payload._id}`
         );
 
         setConversations(res.data);
@@ -129,7 +131,7 @@ const Messages: React.FC<any> = () => {
       };
       try {
         const res = await axios.post(
-          `http://localhost:9000/conversations`,
+          `https://data-server-shop.onrender.com/conversations`,
           conversationCreate
         );
         setRefresh((f) => f + 1);
@@ -154,7 +156,7 @@ const Messages: React.FC<any> = () => {
     const getUser = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/employees/${friendId}`
+          `https://data-server-shop.onrender.com/employees/${friendId}`
         );
         setDataUserMenu(res.data.results);
       } catch (error) {}
@@ -205,7 +207,7 @@ const Messages: React.FC<any> = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:9000/messages",
+        "https://data-server-shop.onrender.com/messages",
         messageSend
       );
       setRefresh((f) => f + 1);
@@ -226,7 +228,7 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/messages/${conversationCurrent._id}`
+          `https://data-server-shop.onrender.com/messages/${conversationCurrent._id}`
         );
         setMessages(res.data);
       } catch (error) {}
@@ -268,7 +270,7 @@ const Messages: React.FC<any> = () => {
 
           try {
             const response = await axios.get(
-              `http://localhost:9000/employees/${otherMembers}`
+              `https://data-server-shop.onrender.com/employees/${otherMembers}`
             );
             return response.data;
           } catch (error) {

@@ -15,7 +15,7 @@ export const useAuthStore = create(
         login: async ({ email, password }: isLogin) => {
           try {
             const response = await axios.post(
-              "http://localhost:9000/employees/login",
+              "https://data-server-shop.onrender.com/employees/login",
               {
                 email: email,
                 password: password,
