@@ -192,7 +192,7 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/messages/${conversationInfor.conversationId}`
+          `${URL_ENV}/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
       } catch (error) {}
