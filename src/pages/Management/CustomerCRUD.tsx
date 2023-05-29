@@ -34,6 +34,7 @@ import moment from "moment";
 moment().format();
 function CustomerCRUD() {
   //Set File avatar
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
   const [file, setFile] = useState<any>(null);
 
@@ -49,7 +50,7 @@ function CustomerCRUD() {
   const dateFormat = "DD/MM/YYYY";
 
   // API OF COLLECTIOn
-  let API_URL = "https://data-server-shop.onrender.com/customers";
+  let API_URL = `${URL_ENV}/customers`;
 
   // MODAL:
   // Modal open Create:
@@ -88,7 +89,11 @@ function CustomerCRUD() {
 
   //Create data
   const handleCreate = (record: any) => {
-    record.createdBy = auth.payload;
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.createdDate = new Date().toISOString();
     if (record.Locked === undefined) {
       record.Locked = false;
@@ -104,10 +109,7 @@ function CustomerCRUD() {
         formData.append("file", file);
 
         axios
-          .post(
-            `https://data-server-shop.onrender.com/upload/customers/${_id}/image`,
-            formData
-          )
+          .post(`${URL_ENV}/upload/customers/${_id}/image`, formData)
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
@@ -135,7 +137,11 @@ function CustomerCRUD() {
   };
   //Update a Data
   const handleUpdate = (record: any) => {
-    record.updatedBy = auth.payload;
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.updatedDate = new Date().toISOString();
 
     record.birthday = record.birthday.toISOString();
@@ -357,7 +363,7 @@ function CustomerCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={"https://data-server-shop.onrender.com" + record.imageUrl}
+                src={`${URL_ENV}${record.imageUrl}`}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -583,7 +589,7 @@ function CustomerCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://data-server-shop.onrender.com/upload/customers/${record._id}/image`}
+            action={`${URL_ENV}/upload/customers/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {

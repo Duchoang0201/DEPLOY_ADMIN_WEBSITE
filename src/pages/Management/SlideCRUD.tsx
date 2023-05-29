@@ -33,6 +33,8 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import moment from "moment";
 moment().format();
 function SlidesCRUD() {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   //Set File avatar
 
   const [file, setFile] = useState<any>(null);
@@ -46,7 +48,7 @@ function SlidesCRUD() {
   dayjs.extend(customParseFormat);
 
   // API OF COLLECTIOn
-  let API_URL = "https://data-server-shop.onrender.com/slides";
+  let API_URL = `${URL_ENV}/slides`;
 
   // MODAL:
   // Modal open Create:
@@ -85,7 +87,11 @@ function SlidesCRUD() {
 
   //Create data
   const handleCreate = (record: any) => {
-    record.createdBy = auth.payload;
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.createdDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
@@ -101,10 +107,7 @@ function SlidesCRUD() {
         formData.append("file", file);
 
         axios
-          .post(
-            `https://data-server-shop.onrender.com/upload/slides/${_id}/image`,
-            formData
-          )
+          .post(`${URL_ENV}/upload/slides/${_id}/image`, formData)
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
@@ -134,7 +137,11 @@ function SlidesCRUD() {
   };
   //Update a Data
   const handleUpdate = (record: any) => {
-    record.updatedBy = auth.payload;
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.updatedDate = new Date().toISOString();
 
     axios
@@ -152,12 +159,12 @@ function SlidesCRUD() {
 
   //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
 
-  const [isLocked, setIsLocked] = useState("");
-  const onSearchIsLocked = useCallback((value: any) => {
+  const [isActive, setIsActive] = useState("");
+  const onSearchIsActive = useCallback((value: any) => {
     if (value) {
-      setIsLocked(value);
+      setIsActive(value);
     } else {
-      setIsLocked("");
+      setIsActive("");
     }
   }, []);
 
@@ -208,7 +215,7 @@ function SlidesCRUD() {
     slideTitle && `&title=${slideTitle}`,
     slideSummary && `&summary=${slideSummary}`,
     slideUrl && `&url=${slideUrl}`,
-    isLocked && `&active=${isLocked}`,
+    isActive && `&active=${isActive}`,
     skip && `&skip=${skip}`,
   ]
     .filter(Boolean)
@@ -231,7 +238,7 @@ function SlidesCRUD() {
       title: () => {
         return (
           <div>
-            {isLocked ? (
+            {isActive ? (
               <div className="text-danger">No</div>
             ) : (
               <div className="secondary">No</div>
@@ -247,12 +254,12 @@ function SlidesCRUD() {
             <Space>
               {" "}
               {currentPage === 1 ? index + 1 : index + currentPage * 10 - 9}
-              {record.active === false && (
+              {record.active === true && (
                 <span style={{ fontSize: "16px", color: "#08c" }}>
                   <CheckCircleOutlined /> Active
                 </span>
               )}
-              {record.active === true && (
+              {record.active === false && (
                 <span style={{ fontSize: "16px", color: "#dc3545" }}>
                   <CheckCircleOutlined /> Locked
                 </span>
@@ -268,13 +275,13 @@ function SlidesCRUD() {
               <Select
                 allowClear
                 onClear={() => {
-                  setIsLocked("");
+                  setIsActive("");
                 }}
                 style={{ width: "125px" }}
                 placeholder="Select a supplier"
                 optionFilterProp="children"
                 showSearch
-                onChange={onSearchIsLocked}
+                onChange={onSearchIsActive}
                 filterOption={(input, option) =>
                   (option?.label ?? "")
                     .toLowerCase()
@@ -282,12 +289,12 @@ function SlidesCRUD() {
                 }
                 options={[
                   {
-                    value: "false",
+                    value: "true",
                     label: "Active",
                   },
 
                   {
-                    value: "true",
+                    value: "false",
                     label: "Deleted",
                   },
                 ]}
@@ -309,7 +316,7 @@ function SlidesCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={"https://data-server-shop.onrender.com" + record.imageUrl}
+                src={`${URL_ENV}${record.imageUrl}`}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -441,7 +448,7 @@ function SlidesCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://data-server-shop.onrender.com/upload/slides/${record._id}/image`}
+            action={`${URL_ENV}/upload/slides/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -646,7 +653,7 @@ function SlidesCRUD() {
           pagination={false}
           scroll={{ x: "max-content", y: 610 }}
           rowClassName={(record) => {
-            return record.active === true
+            return record.active === false
               ? "text-danger bg-success-subtle"
               : "";
           }}

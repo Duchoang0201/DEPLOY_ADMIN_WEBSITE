@@ -20,7 +20,7 @@ const Conversation = ({ conver }: { conver: any }) => {
       .join("&");
     console.log("««««« query »»»»»", query);
     const getUser = async () => {
-      const res = await axios.get(`https://data-server-shop.onrender.com/employees?${query}`);
+      const res = await axios.get(`${process.env.REACT_APP_BASE_URL}?${query}`);
       console.log("««««« res.data »»»»»", res.data);
       setData(res.data.results);
     };
@@ -32,22 +32,7 @@ const Conversation = ({ conver }: { conver: any }) => {
       return;
     }
     setLoading(true);
-
-    // fetch(`https://data-server-shop.onrender.com/employees?employeeId=${auth.payload._id}`)
-    //   .then((res) => res.json())
-    //   .then((body) => {
-    //     console.log(body);
-    //     setData([...data, ...body.results]);
-    //     // setLoading(false);
-    //   })
-    //   .catch(() => {
-    //     setLoading(false);
-    //   });
   };
-
-  //   useEffect(() => {
-  //     loadMoreData();
-  //   }, []);
 
   return (
     <div

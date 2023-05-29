@@ -1,6 +1,6 @@
-import React from "react";
 import {
   CommentOutlined,
+  EllipsisOutlined,
   ExportOutlined,
   HomeOutlined,
   OrderedListOutlined,
@@ -11,10 +11,11 @@ import {
 import { Menu } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../hooks/useAuthStore";
+import { useBreadcrumb } from "../hooks/useBreadcrumb";
 
 const MainMenu = () => {
   const { auth } = useAuthStore((state: any) => state);
-
+  const { addBread } = useBreadcrumb((state: any) => state);
   const items = [
     {
       label: "Dashboard",
@@ -50,14 +51,7 @@ const MainMenu = () => {
           key: "management/products",
           label: "Products",
         },
-        {
-          key: "management/slides",
-          label: "Slides",
-        },
-        {
-          key: "management/features",
-          label: "Features",
-        },
+
         auth?.payload?.isAdmin && {
           key: "management/employees",
           label: "Employees",
@@ -79,7 +73,21 @@ const MainMenu = () => {
         },
       ],
     },
-
+    {
+      label: "Function",
+      key: "function",
+      icon: <EllipsisOutlined />,
+      children: [
+        {
+          key: "function/slides",
+          label: "Slides",
+        },
+        {
+          key: "function/features",
+          label: "Features",
+        },
+      ],
+    },
     {
       label: "Account",
       key: "/account",
@@ -108,26 +116,17 @@ const MainMenu = () => {
   const navigate = useNavigate();
   const { logout } = useAuthStore((state: any) => state);
 
-  //   const [current, setCurrent] = useState("category");
   const onMenuClick = (value: any) => {
-    console.log(value);
+    addBread(value.key);
     if (value.key === "account/logout") {
       logout();
       navigate("/");
     } else {
       navigate("/" + value.key);
     }
-
-    // setCurrent(value.key);
   };
 
   return (
-    // <Menu
-    //   onClick={onMenuClick}
-    //   selectedKeys={[current]}
-    //   mode="horizontal"
-    //   items={items}
-    // />
     <Menu
       theme="dark"
       mode="inline"

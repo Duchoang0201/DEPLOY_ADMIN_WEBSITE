@@ -14,18 +14,18 @@ import axios from "axios";
 import { axiosClient } from "../../libraries/axiosClient";
 
 export default function Orders() {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   const [refresh, setRefresh] = useState(0);
   const [addProductsModalVisible, setAddProductsModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   // Products
   const [products, setProducts] = useState<any>([]);
   useEffect(() => {
-    axios
-      .get("https://data-server-shop.onrender.com/products")
-      .then((response) => {
-        setProducts(response.data.results);
-      });
-  }, [refresh]);
+    axios.get(`${URL_ENV}/products`).then((response) => {
+      setProducts(response.data.results);
+    });
+  }, [URL_ENV, refresh]);
 
   const [orders, setOrders] = useState<any>([]);
   useEffect(() => {
@@ -166,11 +166,18 @@ export default function Orders() {
 
         let total = 0;
         orderDetails.forEach((od: any) => {
-          let sum = od.quantity * od.product.total;
+          let sum = od.quantity * od.product?.total;
           total = total + sum;
         });
 
-        return <strong>{total}</strong>;
+        return (
+          <strong>
+            {total.toLocaleString("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            })}
+          </strong>
+        );
       },
     },
     {

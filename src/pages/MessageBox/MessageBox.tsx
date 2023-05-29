@@ -4,10 +4,12 @@ import { EditFilled, WechatOutlined } from "@ant-design/icons";
 import axios from "axios";
 
 const MessageBox: React.FC = () => {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   const [users, setUsers] = useState<any>();
   const [userName, setUserName] = useState("");
 
-  const API_USERS = "https://data-server-shop.onrender.com/employees";
+  const API_USERS = `${URL_ENV}/employees`;
   useEffect(() => {
     axios
       .get(API_USERS)
@@ -15,7 +17,7 @@ const MessageBox: React.FC = () => {
         setUsers(res.data.results);
       })
       .catch((err) => console.log(err.name));
-  }, []);
+  }, [API_USERS]);
 
   const onSearchUser = useCallback((record: any, label: any) => {
     if (record) {

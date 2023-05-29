@@ -34,10 +34,12 @@ interface ISupplier {
 }
 
 function SupperliersCRUD() {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   const [refresh, setRefresh] = useState(0);
   const { auth } = useAuthStore((state: any) => state);
 
-  let API_URL = "https://data-server-shop.onrender.com/suppliers";
+  let API_URL = `${URL_ENV}/suppliers`;
 
   // MODAL:
   // Modal open Create:
@@ -77,7 +79,11 @@ function SupperliersCRUD() {
 
   //Create data
   const handleCreate = (record: any) => {
-    record.createdBy = auth.payload;
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.createdDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
@@ -114,7 +120,11 @@ function SupperliersCRUD() {
   };
   //Update a Data
   const handleUpdate = (record: any) => {
-    record.updatedBy = auth.payload;
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.updatedDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
@@ -133,6 +143,7 @@ function SupperliersCRUD() {
       })
       .catch((err) => {
         console.log(err);
+        message.error(`${err.response.data.message}`, 2);
       });
   };
 
@@ -208,7 +219,7 @@ function SupperliersCRUD() {
     setCurrentPage(value);
   };
   //GET DATA ON FILLTER
-  const URL_FILTER = `https://data-server-shop.onrender.com/suppliers?${[
+  const URL_FILTER = `${URL_ENV}/suppliers?${[
     supplierName && `name=${supplierName}`,
     supplierEmail && `email=${supplierEmail}`,
     supplierPhone && `phoneNumber=${supplierPhone}`,

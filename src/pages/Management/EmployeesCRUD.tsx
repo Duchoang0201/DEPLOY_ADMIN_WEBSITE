@@ -32,6 +32,8 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import moment from "moment";
 function EmployeeCRUD() {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   //Set File avatar
 
   const [file, setFile] = useState<any>(null);
@@ -48,7 +50,7 @@ function EmployeeCRUD() {
   const dateFormat = "DD/MM/YYYY";
 
   // API OF COLLECTIOn
-  let API_URL = "https://data-server-shop.onrender.com/employees";
+  let API_URL = `${URL_ENV}/employees`;
 
   // MODAL:
   // Modal open Create:
@@ -88,7 +90,11 @@ function EmployeeCRUD() {
 
   //Create data
   const handleCreate = (record: any) => {
-    record.createdBy = auth.payload;
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.createdDate = new Date().toISOString();
     if (record.Locked === undefined) {
       record.Locked = false;
@@ -105,10 +111,7 @@ function EmployeeCRUD() {
         formData.append("file", file);
 
         axios
-          .post(
-            `https://data-server-shop.onrender.com/upload/employees/${_id}/image`,
-            formData
-          )
+          .post(`${URL_ENV}/upload/employees/${_id}/image`, formData)
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
@@ -135,7 +138,11 @@ function EmployeeCRUD() {
   };
   //Update a Data
   const handleUpdate = (record: any) => {
-    record.updatedBy = auth.payload;
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.updatedDate = new Date().toISOString();
 
     record.birthday = record.birthday.toISOString();
@@ -359,7 +366,7 @@ function EmployeeCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={"https://data-server-shop.onrender.com" + record.imageUrl}
+                src={"http://localhost:9000" + record.imageUrl}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -587,7 +594,7 @@ function EmployeeCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://data-server-shop.onrender.com/upload/employees/${record._id}/image`}
+            action={`${URL_ENV}p://localhost:9000/upload/employees/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {

@@ -25,6 +25,9 @@ import { format } from "timeago.js";
 import { io } from "socket.io-client";
 
 const Messages: React.FC<any> = () => {
+  const URL_ENV: any =
+    process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   const formRef = useRef<any>(null);
   const [createForm] = Form.useForm();
   const [createConversationForm] = Form.useForm();
@@ -57,29 +60,27 @@ const Messages: React.FC<any> = () => {
   const socket = useRef<any>();
 
   useEffect(() => {
-    socket.current = io("https://data-server-shop.onrender.com");
-  }, []);
+    socket.current = io(URL_ENV);
+  }, [URL_ENV]);
 
   useEffect(() => {
     socket.current.on("getMessage", (data: any) => {
-      if (data == null) {
-        setRefresh((f) => f + 1);
-      } else {
-        setArrivalMessage({
-          sender: data.senderId,
-          text: data.text,
-          createdAt: Date.now(),
-        });
-        //or setRefresh((f) => f + 1);
-      }
+      console.log("««««« data »»»»»", data);
+
+      setArrivalMessage({
+        sender: data.senderId,
+        text: data.text,
+        createdAt: Date.now(),
+      });
+      // setRefresh((f) => f + 1);
     });
   }, []);
 
   // Get message live socket.io
   useEffect(() => {
     arrivalMessage &&
-      conversationInfor?.friends._id.includes(arrivalMessage.senderId);
-    setMessages((prev: any) => [...prev, arrivalMessage]);
+      // conversationInfor?.friends._id.includes(arrivalMessage.senderId)
+      setMessages((prev: any) => [...prev, arrivalMessage]);
   }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
 
   //Add user for socket.io
@@ -89,8 +90,9 @@ const Messages: React.FC<any> = () => {
 
   //Get User Online IO
   useEffect(() => {
-    socket.current.on("userOnline", (users: any) => {
+    socket.current.on("getUsers", (users: any) => {
       setUsersOnline(users);
+      setRefresh((f) => f + 1);
     });
   }, [auth]);
 
@@ -98,7 +100,6 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     socket.current.on("userOffline", (users: any) => {
       setUsersOnline(users);
-      console.log("««««« usersOffline »»»»»", users);
     });
   }, [auth]);
 
@@ -106,9 +107,7 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const res = await axios.get(
-          `https://data-server-shop.onrender.com/employees`
-        );
+        const res = await axios.get(`${URL_ENV}/employees`);
         const dataIn = res.data.results.filter(
           (item: any) => item._id !== auth.payload._id
         );
@@ -116,14 +115,14 @@ const Messages: React.FC<any> = () => {
       } catch (err) {}
     };
     getAllUsers();
-  }, [auth.payload._id]);
+  }, [URL_ENV, auth.payload._id]);
 
   //Get conversation
   useEffect(() => {
     const getConversations = async () => {
       try {
         const res = await axios.get(
-          `https://data-server-shop.onrender.com/conversations/${auth.payload._id}`
+          `${URL_ENV}/conversations/${auth.payload._id}`
         );
 
         setConversations(res.data);
@@ -131,7 +130,7 @@ const Messages: React.FC<any> = () => {
       } catch (err) {}
     };
     getConversations();
-  }, [auth.payload._id, refresh]);
+  }, [URL_ENV, auth.payload._id, refresh]);
 
   //Create a conversation
 
@@ -143,7 +142,7 @@ const Messages: React.FC<any> = () => {
       };
       try {
         const res = await axios.post(
-          `https://data-server-shop.onrender.com/conversations`,
+          `${URL_ENV}/conversations`,
           conversationCreate
         );
         if (res) {
@@ -174,10 +173,7 @@ const Messages: React.FC<any> = () => {
     });
 
     try {
-      const res = await axios.post(
-        "https://data-server-shop.onrender.com/messages",
-        messageSend
-      );
+      const res = await axios.post(`${URL_ENV}/messages`, messageSend);
       setRefresh((f) => f + 1);
       setMessages([...messages, res.data]);
       createForm.resetFields();
@@ -196,10 +192,9 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `https://data-server-shop.onrender.com/messages/${conversationInfor.conversationId}`
+          `http://localhost:9000/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
-        console.log("««««« res »»»»»", res.data);
       } catch (error) {}
     };
     getMessages();
@@ -234,7 +229,7 @@ const Messages: React.FC<any> = () => {
 
           try {
             const response = await axios.get(
-              `https://data-server-shop.onrender.com/employees/${otherMembers}`
+              `${URL_ENV}/employees/${otherMembers}`
             );
             const friendData = response.data.result; // Assuming the friend data is in the 'result' property
             const friendInfo = {
@@ -263,7 +258,7 @@ const Messages: React.FC<any> = () => {
     };
 
     fetchData();
-  }, [conversations, auth.payload._id]);
+  }, [conversations, auth.payload._id, URL_ENV]);
 
   return (
     <>
@@ -340,7 +335,7 @@ const Messages: React.FC<any> = () => {
                 style={{ height: "125px", overflowY: "auto" }}
               >
                 {friendData?.map((friends: any, index: any) => (
-                  <div key={`friend-${index}`}>
+                  <div key={`${friends}-${index}`}>
                     <Button
                       onClick={() => setConversationInfor(friends)}
                       className="text-start"
@@ -360,7 +355,7 @@ const Messages: React.FC<any> = () => {
                 
                   `}
                   extra={
-                    usersOnline?.users?.some(
+                    usersOnline?.some(
                       (user: any) =>
                         user.userId === conversationInfor.friends._id
                     ) ? (
@@ -393,10 +388,7 @@ const Messages: React.FC<any> = () => {
                             key={`${item?._id}-me-${index}`}
                             className="d-flex flex-row-reverse"
                           >
-                            <div
-                              key={`${item?._id}-me-${index}`}
-                              className="w-auto"
-                            >
+                            <div className="w-auto">
                               <h6 className="Name text-body-secondary">
                                 <UserOutlined /> Me
                               </h6>
@@ -410,10 +402,7 @@ const Messages: React.FC<any> = () => {
                           </div>
                         ) : (
                           <div key={`${item?._id}-${index}`} className="d-flex">
-                            <div
-                              key={`${item?._id}-me-${index}`}
-                              className="w-auto"
-                            >
+                            <div className="w-auto">
                               <h6 className="Name text-primary">
                                 <UserOutlined /> {item?.employee?.firstName}{" "}
                                 {item?.employee?.lastName}

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Login from "./pages/Auth/Login";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "./hooks/useAuthStore";
-import { Layout, Button, theme } from "antd";
+import { Layout, Button, theme, Divider } from "antd";
 import { io } from "socket.io-client";
 
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
@@ -24,17 +24,55 @@ import SearchOrdersByStatus from "./pages/Order/SearchOrdersByStatus";
 import EmployeesCRUD from "./pages/Management/EmployeesCRUD";
 import SlidesCRUD from "./pages/Management/SlideCRUD";
 import FeaturesCRUD from "./pages/Management/FeaturesCRUD";
+import axios from "axios";
+import { useBreadcrumb } from "./hooks/useBreadcrumb";
 numeral.locale("vi");
 const { Header, Sider, Content } = Layout;
 
 const App: React.FC = () => {
-  const { auth } = useAuthStore((state: any) => state);
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
+  const { breadCrumb } = useBreadcrumb((state: any) => state);
+
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    // Update windowWidth when the window is resized
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    // Add event listener to the window resize event
+    window.addEventListener("resize", handleResize);
+
+    // Clean up the event listener on component unmount
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []); // Empty dependency array ensures that the effect runs only once
+
+  const { auth } = useAuthStore((state: any) => state);
+  const [user, setUser] = useState<any>();
+
+  /// USER ONLINE_OFFLINE
   const socket = useRef<any>();
 
   useEffect(() => {
-    socket.current = io("https://data-server-shop.onrender.com");
-  }, []);
+    socket.current = io(URL_ENV);
+    setTimeout(() => {}, 3000);
+  }, [URL_ENV]);
+
+  useEffect(() => {
+    socket.current.emit("addUser", auth.payload._id);
+  }, [auth]);
+
+  useEffect(() => {
+    if (auth) {
+      axios.get(`${URL_ENV}/employees/${auth.payload._id}`).then((res) => {
+        setUser(res.data.result);
+      });
+    }
+  }, [URL_ENV, auth]);
 
   // Function reresh to clear local storage
 
@@ -56,10 +94,10 @@ const App: React.FC = () => {
               </Routes>
             </Content>
           )}
-
           {auth && (
             <Layout>
               <Sider
+                collapsedWidth={windowWidth <= 768 ? 0 : undefined}
                 trigger={null}
                 collapsible
                 collapsed={collapsed}
@@ -82,9 +120,11 @@ const App: React.FC = () => {
                 />
                 <MainMenu />
               </Sider>
+
               <Layout
-                className="site-layout"
-                style={{ marginLeft: collapsed ? 80 : 200 }}
+                style={{
+                  marginLeft: collapsed ? (windowWidth <= 768 ? 0 : 60) : 200,
+                }}
               >
                 <Header
                   style={{
@@ -112,18 +152,28 @@ const App: React.FC = () => {
                         }}
                       />
                     </div>
-                    <div className="MID d-flex flex-row justify-content-between">
-                      <h1 style={{ color: "black" }}> ONLINE SHOP </h1>
+                    <div>
+                      <h1 className="py-2" style={{ color: "black" }}>
+                        {" "}
+                        MANAGEMENT
+                      </h1>
                     </div>
                     <div className="RIGHT " style={{ width: "110px" }}>
                       <strong>
-                        {/* {user?.firstName} {user?.lastName} */}
+                        {user?.firstName} {user?.lastName}
                       </strong>
                     </div>
                   </div>
                 </Header>
-
-                <Content style={{ margin: "24px 16px 0", overflow: "initial" }}>
+                <div className="mx-4 my-2 text-danger">
+                  {" "}
+                  {breadCrumb === "Account/Logout" || breadCrumb === null ? (
+                    <Divider>Dashboard/Home</Divider>
+                  ) : (
+                    <Divider>{breadCrumb}</Divider>
+                  )}
+                </div>
+                <Content className="mx-4 my-2">
                   {/* Register routes */}
 
                   <Routes>
@@ -142,9 +192,9 @@ const App: React.FC = () => {
                       path="/management/products"
                       element={<ProductsCRUD />}
                     />
-                    <Route path="/management/slides" element={<SlidesCRUD />} />
+                    <Route path="/function/slides" element={<SlidesCRUD />} />
                     <Route
-                      path="/management/features"
+                      path="/function/features"
                       element={<FeaturesCRUD />}
                     />
                     <Route

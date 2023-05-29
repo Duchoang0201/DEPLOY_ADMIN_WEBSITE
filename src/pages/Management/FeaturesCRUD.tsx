@@ -33,6 +33,8 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import moment from "moment";
 moment().format();
 function FeaturesCRUD() {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   //Set File avatar
 
   const [file, setFile] = useState<any>(null);
@@ -46,7 +48,7 @@ function FeaturesCRUD() {
   dayjs.extend(customParseFormat);
 
   // API OF COLLECTIOn
-  let API_URL = "https://data-server-shop.onrender.com/features";
+  let API_URL = `${URL_ENV}/features`;
 
   // MODAL:
   // Modal open Create:
@@ -85,7 +87,11 @@ function FeaturesCRUD() {
 
   //Create data
   const handleCreate = (record: any) => {
-    record.createdBy = auth.payload;
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.createdDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
@@ -101,10 +107,7 @@ function FeaturesCRUD() {
         formData.append("file", file);
 
         axios
-          .post(
-            `https://data-server-shop.onrender.com/upload/features/${_id}/image`,
-            formData
-          )
+          .post(`${URL_ENV}/upload/features/${_id}/image`, formData)
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
@@ -134,7 +137,11 @@ function FeaturesCRUD() {
   };
   //Update a Data
   const handleUpdate = (record: any) => {
-    record.updatedBy = auth.payload;
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.updatedDate = new Date().toISOString();
 
     axios
@@ -310,7 +317,7 @@ function FeaturesCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={"https://data-server-shop.onrender.com" + record.imageUrl}
+                src={`${URL_ENV}${record.imageUrl}`}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -442,7 +449,7 @@ function FeaturesCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`https://data-server-shop.onrender.com/upload/features/${record._id}/image`}
+            action={`${URL_ENV}/upload/features/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {

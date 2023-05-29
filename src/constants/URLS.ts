@@ -1,1 +1,1 @@
-export const API_URL = 'https://data-server-shop.onrender.com/';
+export const API_URL =  process.env.REACT_APP_BASE_URL || 'http://localhost:9000';

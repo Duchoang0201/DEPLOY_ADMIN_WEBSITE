@@ -5,6 +5,8 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusCircleOutlined,
+  PlusOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import {
   Button,
@@ -19,22 +21,26 @@ import {
   Select,
   Space,
   Table,
+  Upload,
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
 import axios from "axios";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
 // Date Picker
 
 function CategoryCRUD() {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+  const [file, setFile] = useState<any>(null);
+
   const { auth } = useAuthStore((state: any) => state);
   const [refresh, setRefresh] = useState(0);
 
   // Date Picker Setting
 
   // API OF
-  let API_URL = "https://data-server-shop.onrender.com/categories";
+  let API_URL = `${URL_ENV}/categories`;
 
   // MODAL:
   // Modal open Create:
@@ -75,21 +81,34 @@ function CategoryCRUD() {
 
   //Create data
   const handleCreate = (record: any) => {
-    record.createdBy = auth.payload;
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.createdDate = new Date().toISOString();
-    if (record.active === undefined) {
-      record.active = false;
+    if (record.Locked === undefined) {
+      record.Locked = false;
     }
-    record.isDeleted = false;
 
     axios
       .post(API_URL, record)
       .then((res) => {
-        setRefresh((f) => f + 1);
-        setOpenCreate(false);
+        // UPLOAD FILE
+        const { _id } = res.data.result;
 
-        message.success(" Add new Category sucessfully!", 1.5);
-        createForm.resetFields();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        axios
+          .post(`${URL_ENV}/upload/categories/${_id}/image`, formData)
+          .then((respose) => {
+            message.success("Thêm mới thành công!");
+            createForm.resetFields();
+            setRefresh((f) => f + 1);
+            setOpenCreate(false);
+            setFile(null);
+          });
       })
       .catch((err) => {
         console.log(err);
@@ -98,19 +117,6 @@ function CategoryCRUD() {
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    // axios
-    //   .patch(API_URL + "/" + record._id, { isDeleted: true })
-    //   .then((res) => {
-    //     console.log(res);
-    //     setOpen(false);
-    //     setOpenCreate(false);
-    //     setRefresh((f) => f + 1);
-    //     message.success("Deleted sucessfully!!", 1.5);
-    //   })
-    //   .catch((err) => {
-    //     console.log(err);
-    //   });
-
     axios
       .delete(API_URL + "/" + record._id)
       .then((res) => {
@@ -123,7 +129,11 @@ function CategoryCRUD() {
   };
   //Update a Data
   const handleUpdate = (record: any) => {
-    record.updatedBy = auth.payload;
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
     record.updatedDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
@@ -221,6 +231,7 @@ function CategoryCRUD() {
 
   //Setting column
   const columns = [
+    //NO
     {
       title: () => {
         return (
@@ -306,6 +317,26 @@ function CategoryCRUD() {
       },
       width: "11%",
     },
+    //IMAGE
+    {
+      width: "10%",
+      title: "Picture",
+      key: "imageUrl",
+      dataIndex: "imageUrl",
+      render: (text: any, record: any, index: any) => {
+        return (
+          <div>
+            {record.imageUrl && (
+              <img
+                src={`${URL_ENV}${record.imageUrl}`}
+                style={{ height: 60 }}
+                alt="record.imageUrl"
+              />
+            )}
+          </div>
+        );
+      },
+    },
     //Name
     {
       title: () => {
@@ -334,6 +365,7 @@ function CategoryCRUD() {
         );
       },
     },
+
     //Desciption
     {
       title: () => {
@@ -400,6 +432,29 @@ function CategoryCRUD() {
               updateForm.setFieldsValue(record);
             }}
           ></Button>
+          <Upload
+            showUploadList={false}
+            name="file"
+            action={`${URL_ENV}/upload/categories/${record._id}/image`}
+            headers={{ authorization: "authorization-text" }}
+            onChange={(info) => {
+              if (info.file.status !== "uploading") {
+                console.log(info.file);
+              }
+
+              if (info.file.status === "done") {
+                message.success(`${info.file.name} file uploaded successfully`);
+              } else if (info.file.status === "error") {
+                message.error(`${info.file.name} file upload failed.`);
+              }
+              setTimeout(() => {
+                console.log("««««« run »»»»»");
+                setRefresh(refresh + 1);
+              }, 3000);
+            }}
+          >
+            <Button icon={<UploadOutlined />} />
+          </Upload>
         </Space>
       ),
       filterDropdown: () => {
@@ -435,7 +490,7 @@ function CategoryCRUD() {
   ];
 
   return (
-    <div className="container">
+    <div>
       {/* Modal Create A Category */}
       <Modal
         title={`Create Category `}
@@ -556,6 +611,38 @@ function CategoryCRUD() {
               >
                 <Input />
               </Form.Item>
+              <Form.Item
+                labelCol={{
+                  span: 7,
+                }}
+                wrapperCol={{
+                  span: 16,
+                }}
+                label="Hình minh họa"
+                name="file"
+              >
+                <Upload
+                  maxCount={1}
+                  listType="picture-card"
+                  showUploadList={true}
+                  beforeUpload={(file) => {
+                    setFile(file);
+                    return false;
+                  }}
+                  onRemove={() => {
+                    setFile("");
+                  }}
+                >
+                  {!file ? (
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Upload</div>
+                    </div>
+                  ) : (
+                    ""
+                  )}
+                </Upload>
+              </Form.Item>
             </div>
           </Form>
         </div>
@@ -617,6 +704,22 @@ function CategoryCRUD() {
               label="Description"
               name="description"
               rules={[{ required: true, message: "Please input Description!" }]}
+            >
+              <Input />
+            </FormItem>
+            <FormItem
+              labelCol={{
+                span: 7,
+              }}
+              wrapperCol={{
+                span: 16,
+              }}
+              hasFeedback
+              label="coverImageUrl"
+              name="coverImageUrl"
+              rules={[
+                { required: true, message: "Please input coverImageUrl!" },
+              ]}
             >
               <Input />
             </FormItem>

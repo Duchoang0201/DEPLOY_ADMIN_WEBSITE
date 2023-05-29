@@ -40,7 +40,8 @@ const Information = (props: Props) => {
   };
   const { auth } = useAuthStore((state: any) => state);
 
-  const E_URL = `https://data-server-shop.onrender.com/employees/${auth.payload._id}`;
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+  const E_URL = `${URL_ENV}/employees/${auth.payload._id}`;
 
   useEffect(() => {
     axios
@@ -57,12 +58,8 @@ const Information = (props: Props) => {
     const confirmData = { [selectItem]: updateData[selectItem] };
     updateForm.resetFields();
     axios
-      .patch(
-        `https://data-server-shop.onrender.com/employees/${auth.payload._id}`,
-        confirmData
-      )
+      .patch(`${URL_ENV}/employees/${auth.payload._id}`, confirmData)
       .then((res) => {
-        console.log(res);
         setRefresh((f) => f + 1);
         message.success("Update a data successFully!!", 1.5);
       })
