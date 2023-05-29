@@ -198,7 +198,7 @@ const Messages: React.FC<any> = () => {
       } catch (error) {}
     };
     getMessages();
-  }, [conversationInfor, refresh]);
+  }, [conversationInfor, refresh, URL_ENV]);
 
   /// PART OF CHATBOX
 
