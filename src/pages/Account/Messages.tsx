@@ -43,7 +43,6 @@ const Messages: React.FC<any> = () => {
   //Get Meessage
   const [messages, setMessages] = useState<any[any]>([]);
 
-  const [arrivalMessage, setArrivalMessage] = useState<any>({});
   //loading
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -72,13 +71,6 @@ const Messages: React.FC<any> = () => {
 
     // Cleanup the socket connection on component unmount
   }, [URL_ENV, socket]);
-
-  // Get message live socket.io
-  useEffect(() => {
-    arrivalMessage &&
-      conversationInfor?.friends._id.includes(arrivalMessage.senderId);
-    setMessages((prev: any) => [...prev, arrivalMessage]);
-  }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
 
   //GET USER ONLINE
   //Get User Online IO
