@@ -66,7 +66,9 @@ const Messages: React.FC<any> = () => {
     socket.current = io(URL_ENV);
 
     socket.current.on("getMessage", (data: any) => {
-      setRefresh((f) => f + 1);
+      setTimeout(() => {
+        setRefresh((f) => f + 1);
+      }, 3000);
     });
 
     // Cleanup the socket connection on component unmount
