@@ -43,7 +43,7 @@ const Messages: React.FC<any> = () => {
   //Get Meessage
   const [messages, setMessages] = useState<any[any]>([]);
 
-  const [arrivalMessage, setArrivalMessage] = useState<any>([]);
+  // const [arrivalMessage, setArrivalMessage] = useState<any>([]);
   //loading
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -63,28 +63,56 @@ const Messages: React.FC<any> = () => {
     socket.current = io(URL_ENV);
   }, [URL_ENV]);
 
+  // useEffect(() => {
+  //   socket.current.on("getMessage", (data: any) => {
+  //     console.log("««««« data »»»»»", data);
+
+  //     setTimeout(() => {
+  //       setArrivalMessage({
+  //         sender: data.senderId,
+  //         text: data.text,
+  //         createdAt: Date.now(),
+  //       });
+  //     }, 1500);
+  //   });
+  // }, []);
+
+  // // Get message live socket.io
+
+  // useEffect(() => {
+  //   arrivalMessage && setMessages((prev: any) => [...prev, arrivalMessage]);
+  // }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
+
   useEffect(() => {
     socket.current.on("getMessage", (data: any) => {
-      console.log("««««« data »»»»»", data);
+      if (data == null) {
+        setRefresh((f) => f + 1);
+      } else {
+        // setArrivalMessage({
+        //   sender: data.senderId,
+        //   text: data.text,
+        //   createdAt: Date.now(),
+        // });
+        setTimeout(() => {
+          setMessages((prev: any) => [
+            ...prev,
+            {
+              sender: data.senderId,
+              text: data.text,
+              createdAt: Date.now(),
+            },
+          ]);
+        }, 3000);
 
-      setTimeout(() => {
-        setArrivalMessage({
-          sender: data.senderId,
-          text: data.text,
-          createdAt: Date.now(),
-        });
-      }, 2500);
-
-      // setRefresh((f) => f + 1);
+        //or setRefresh((f) => f + 1);
+      }
     });
   }, []);
 
   // Get message live socket.io
-  useEffect(() => {
-    arrivalMessage &&
-      // conversationInfor?.friends._id.includes(arrivalMessage.senderId)
-      setMessages((prev: any) => [...prev, arrivalMessage]);
-  }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
+  // useEffect(() => {
+  //   arrivalMessage && setMessages((prev: any) => [...prev, arrivalMessage]);
+  // }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
 
   //Add user for socket.io
   useEffect(() => {
@@ -385,7 +413,7 @@ const Messages: React.FC<any> = () => {
                     ref={scrollRef}
                     style={{ height: "400px", overflowY: "scroll" }}
                   >
-                    {messages.map((item: any, index: number) => (
+                    {messages?.map((item: any, index: number) => (
                       <>
                         {item?.employee?._id === auth.payload._id ? (
                           <div
