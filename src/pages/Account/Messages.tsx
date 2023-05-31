@@ -43,7 +43,7 @@ const Messages: React.FC<any> = () => {
   //Get Meessage
   const [messages, setMessages] = useState<any[any]>([]);
 
-  // const [arrivalMessage, setArrivalMessage] = useState<any>([]);
+  const [arrivalMessage, setArrivalMessage] = useState<any>([]);
   //loading
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -65,14 +65,25 @@ const Messages: React.FC<any> = () => {
 
   useEffect(() => {
     socket.current.on("getMessage", (data: any) => {
-      setRefresh((f) => f + 1);
+      if (data == null) {
+        setRefresh((f) => f + 1);
+      } else {
+        setArrivalMessage({
+          sender: data.senderId,
+          text: data.text,
+          createdAt: Date.now(),
+        });
+        //or setRefresh((f) => f + 1);
+      }
     });
   }, []);
 
   // Get message live socket.io
-  // useEffect(() => {
-  //   arrivalMessage && setMessages((prev: any) => [...prev, arrivalMessage]);
-  // }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
+  useEffect(() => {
+    arrivalMessage &&
+      conversationInfor?.friends._id.includes(arrivalMessage.senderId);
+    setMessages((prev: any) => [...prev, arrivalMessage]);
+  }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
 
   //Add user for socket.io
   useEffect(() => {
@@ -81,9 +92,8 @@ const Messages: React.FC<any> = () => {
 
   //Get User Online IO
   useEffect(() => {
-    socket.current.on("getUsers", (users: any) => {
+    socket.current.on("userOnline", (users: any) => {
       setUsersOnline(users);
-      setRefresh((f) => f + 1);
     });
   }, [auth]);
 
@@ -91,6 +101,7 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     socket.current.on("userOffline", (users: any) => {
       setUsersOnline(users);
+      console.log("««««« usersOffline »»»»»", users);
     });
   }, [auth]);
 
@@ -106,7 +117,7 @@ const Messages: React.FC<any> = () => {
       } catch (err) {}
     };
     getAllUsers();
-  }, [URL_ENV, auth.payload._id]);
+  }, [auth.payload._id]);
 
   //Get conversation
   useEffect(() => {
@@ -139,8 +150,7 @@ const Messages: React.FC<any> = () => {
         if (res) {
           setRefresh((f) => f + 1);
         }
-      } catch (error: any) {
-        message.error(`${error.response.data.error}`);
+      } catch (error) {
         console.log("««««« error »»»»»", error);
       }
     } else {
@@ -184,13 +194,14 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `${URL_ENV}/messages/${conversationInfor.conversationId}`
+          `http://localhost:9000/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
+        console.log("««««« res »»»»»", res.data);
       } catch (error) {}
     };
     getMessages();
-  }, [URL_ENV, conversationInfor, refresh]);
+  }, [conversationInfor, refresh]);
 
   /// PART OF CHATBOX
 
@@ -327,7 +338,7 @@ const Messages: React.FC<any> = () => {
                 style={{ height: "125px", overflowY: "auto" }}
               >
                 {friendData?.map((friends: any, index: any) => (
-                  <div key={`${friends}-${index}`}>
+                  <div key={`friend-${index}`}>
                     <Button
                       onClick={() => setConversationInfor(friends)}
                       className="text-start"
@@ -347,7 +358,7 @@ const Messages: React.FC<any> = () => {
                 
                   `}
                   extra={
-                    usersOnline?.some(
+                    usersOnline?.users?.some(
                       (user: any) =>
                         user.userId === conversationInfor.friends._id
                     ) ? (
@@ -373,14 +384,17 @@ const Messages: React.FC<any> = () => {
                     ref={scrollRef}
                     style={{ height: "400px", overflowY: "scroll" }}
                   >
-                    {messages?.map((item: any, index: number) => (
+                    {messages.map((item: any, index: number) => (
                       <>
                         {item?.employee?._id === auth.payload._id ? (
                           <div
                             key={`${item?._id}-me-${index}`}
                             className="d-flex flex-row-reverse"
                           >
-                            <div className="w-auto">
+                            <div
+                              key={`${item?._id}-me-${index}`}
+                              className="w-auto"
+                            >
                               <h6 className="Name text-body-secondary">
                                 <UserOutlined /> Me
                               </h6>
@@ -394,7 +408,10 @@ const Messages: React.FC<any> = () => {
                           </div>
                         ) : (
                           <div key={`${item?._id}-${index}`} className="d-flex">
-                            <div className="w-auto">
+                            <div
+                              key={`${item?._id}-me-${index}`}
+                              className="w-auto"
+                            >
                               <h6 className="Name text-primary">
                                 <UserOutlined /> {item?.employee?.firstName}{" "}
                                 {item?.employee?.lastName}
