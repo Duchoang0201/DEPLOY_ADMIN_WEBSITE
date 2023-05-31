@@ -58,12 +58,15 @@ const App: React.FC = () => {
   const socket = useRef<any>();
 
   useEffect(() => {
-    socket.current = io(URL_ENV);
-    setTimeout(() => {}, 3000);
-  }, [URL_ENV]);
+    if (auth) {
+      socket.current = io(URL_ENV);
+    }
+  }, [URL_ENV, auth]);
 
   useEffect(() => {
-    socket.current.emit("addUser", auth?.payload?._id);
+    if (auth) {
+      socket.current.emit("addUser", auth?.payload?._id);
+    }
   }, [auth]);
 
   useEffect(() => {
