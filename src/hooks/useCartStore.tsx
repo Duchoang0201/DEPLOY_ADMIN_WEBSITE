@@ -18,13 +18,10 @@ export const useAuthStore = create(
             const URL_ENV =
               process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
-            const response = await axios.post(
-              `${URL_ENV}http://localhost:9000/employees/login`,
-              {
-                email: email,
-                password: password,
-              }
-            );
+            const response = await axios.post(`${URL_ENV}/employees/login`, {
+              email: email,
+              password: password,
+            });
             set({ auth: response.data }, false, { type: "auth/login-success" });
           } catch (err) {
             set({ auth: null }, false, { type: "auth/login-error" });

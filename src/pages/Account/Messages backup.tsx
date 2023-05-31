@@ -148,8 +148,7 @@ const Messages: React.FC<any> = () => {
         if (res) {
           setRefresh((f) => f + 1);
         }
-      } catch (error: any) {
-        message.error(`${error.response.data.error}`);
+      } catch (error) {
         console.log("««««« error »»»»»", error);
       }
     } else {

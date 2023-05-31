@@ -14,32 +14,33 @@ import axios from "axios";
 import { axiosClient } from "../../libraries/axiosClient";
 
 export default function Orders() {
+  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+
   const [refresh, setRefresh] = useState(0);
-  const [indexDelete, setIndexDelete] = useState(0);
-  const [open, setOpen] = useState(false);
   const [addProductsModalVisible, setAddProductsModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   // Products
   const [products, setProducts] = useState<any>([]);
   useEffect(() => {
-    axios.get("http://localhost:9000/products").then((response) => {
+    axios.get(`${URL_ENV}/products`).then((response) => {
       setProducts(response.data.results);
     });
-  }, [refresh]);
+  }, [URL_ENV, refresh]);
 
   const [orders, setOrders] = useState<any>([]);
-  console.log("««««« orders »»»»»", orders);
   useEffect(() => {
     axiosClient.get("/orders").then((response) => {
       setOrders(response.data);
     });
-  }, [refresh, open]);
+  }, [refresh]);
 
   useEffect(() => {
-    if (open) {
-      setOpen(true);
-    }
-  }, [open]);
+    // Check if the selected order exists in the updated dataResource
+    const updatedSelectedOrder = orders.find(
+      (order: any) => order.id === selectedOrder?.id
+    );
+    setSelectedOrder(updatedSelectedOrder || null);
+  }, [orders, selectedOrder]);
 
   const handleDelete = async (record: any, index: any) => {
     const currentProduct = record;
@@ -50,18 +51,10 @@ export default function Orders() {
       return x.productId.toString() !== currentProduct.productId.toString();
     });
     console.log("remainOrderDetails", remainOrderDetails);
-    const results = await axiosClient.patch("orders/" + selectedOrder._id, {
+    await axiosClient.patch("orders/" + selectedOrder._id, {
       orderDetails: remainOrderDetails,
     });
-
-    if (results) {
-      orders[indexDelete].orderDetails = remainOrderDetails;
-      setOpen(false);
-    }
-
-    setTimeout(() => {
-      setOpen(true);
-    }, 1);
+    setRefresh((f) => f + 1);
   };
 
   const productColumns = [
@@ -106,7 +99,17 @@ export default function Orders() {
       title: "",
       key: "actions",
       render: (text: any, record: any, index: any) => {
-        return <Button onClick={() => handleDelete(record, index)}>Xóa</Button>;
+        const handleDeleteClick = () => {
+          handleDelete(record, index);
+        };
+
+        return (
+          <>
+            <div>
+              <Button onClick={handleDeleteClick}>Xóa</Button>
+            </div>
+          </>
+        );
       },
     },
   ];
@@ -126,11 +129,15 @@ export default function Orders() {
       },
     },
     {
+      width: "10%",
+
       title: "Hình thức thanh toán",
       dataIndex: "paymentType",
       key: "paymentType",
     },
     {
+      width: "10%",
+
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
@@ -149,6 +156,8 @@ export default function Orders() {
       },
     },
     {
+      width: "10%",
+
       title: "Tổng tiền",
       dataIndex: "totalMoney",
       key: "totalMoney",
@@ -157,11 +166,18 @@ export default function Orders() {
 
         let total = 0;
         orderDetails.forEach((od: any) => {
-          let sum = od.quantity * od.product.total;
+          let sum = od.quantity * od.product?.total;
           total = total + sum;
         });
 
-        return <strong>{total}</strong>;
+        return (
+          <strong>
+            {total.toLocaleString("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            })}
+          </strong>
+        );
       },
     },
     {
@@ -172,8 +188,6 @@ export default function Orders() {
           <Button
             onClick={() => {
               setSelectedOrder(record);
-              setOpen(true);
-              setIndexDelete(index);
             }}
           >
             Select
@@ -184,62 +198,8 @@ export default function Orders() {
   ];
 
   return (
-    <div>
+    <div style={{ overflow: "scroll", maxHeight: "100vh" }}>
       {/* Modal specific orders */}
-      <div>
-        {" "}
-        <Modal
-          centered
-          width={"90%"}
-          title="Chi tiết đơn hàng"
-          open={open}
-          onOk={() => {
-            setOpen(false);
-          }}
-          onCancel={() => {
-            setOpen(false);
-          }}
-        >
-          {selectedOrder && (
-            <div>
-              {/* Description of order */}
-              <Descriptions
-                bordered
-                column={1}
-                labelStyle={{ fontWeight: "700" }}
-              >
-                <Descriptions.Item label="Trạng thái">
-                  {selectedOrder.status}
-                </Descriptions.Item>
-                <Descriptions.Item label="Khách hàng">
-                  {selectedOrder.customer?.firstName}{" "}
-                  {selectedOrder.customer?.lastName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Nhân viên">
-                  {selectedOrder.employee?.firstName}{" "}
-                  {selectedOrder.employee?.lastName}
-                </Descriptions.Item>
-              </Descriptions>
-              <Divider />
-
-              {/* Table include product of orderDetails */}
-              <Table
-                rowKey="_id"
-                dataSource={selectedOrder.orderDetails}
-                columns={productColumns}
-              />
-
-              <Button
-                onClick={() => {
-                  setAddProductsModalVisible(true);
-                }}
-              >
-                Thêm sản phẩm
-              </Button>
-            </div>
-          )}
-        </Modal>
-      </div>
 
       {/* Modal add product */}
       <Modal
@@ -281,7 +241,7 @@ export default function Orders() {
                     });
                     setRefresh((f) => f + 1);
 
-                    setAddProductsModalVisible(false);
+                    // setAddProductsModalVisible(false);
 
                     // RELOAD //
                   }}
@@ -295,54 +255,113 @@ export default function Orders() {
       <Row>
         <Col span={24}>
           {" "}
-          <Table rowKey="_id" dataSource={orders} columns={columns} />
+          <Table
+            scroll={{ x: 200 }}
+            rowKey="_id"
+            dataSource={orders}
+            columns={columns}
+          />
         </Col>
-      </Row>
-      {selectedOrder && (
-        <Row>
-          <Col span={24}>
-            {" "}
+        <Modal
+          width={"100%"}
+          onCancel={() => {
+            setSelectedOrder(null);
+          }}
+          onOk={() => {
+            setSelectedOrder(null);
+          }}
+          open={selectedOrder}
+        >
+          <Col>
             {selectedOrder && (
-              <div>
-                {/* Description of order */}
-                <Descriptions
-                  bordered
-                  column={1}
-                  labelStyle={{ fontWeight: "700" }}
-                >
-                  <Descriptions.Item label="Trạng thái">
-                    {selectedOrder.status}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Khách hàng">
-                    {selectedOrder.customer?.firstName}{" "}
-                    {selectedOrder.customer?.lastName}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Nhân viên">
-                    {selectedOrder.employee?.firstName}{" "}
-                    {selectedOrder.employee?.lastName}
-                  </Descriptions.Item>
-                </Descriptions>
-                <Divider />
+              <Card title="Order Detail">
+                <div>
+                  {/* Description of order */}
+                  <Descriptions bordered column={1}>
+                    <Descriptions.Item label="Trạng thái">
+                      {selectedOrder.status}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Khách hàng">
+                      {selectedOrder.customer?.firstName}{" "}
+                      {selectedOrder.customer?.lastName}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Nhân viên">
+                      {selectedOrder.employee?.firstName}{" "}
+                      {selectedOrder.employee?.lastName}
+                    </Descriptions.Item>
+                  </Descriptions>
+                  <Divider />
 
-                {/* Table include product of orderDetails */}
-                <Table
-                  rowKey="_id"
-                  dataSource={selectedOrder.orderDetails}
-                  columns={productColumns}
-                />
+                  {/* Table include product of orderDetails */}
+                  <Table
+                    scroll={{ x: 200 }}
+                    rowKey="_id"
+                    dataSource={selectedOrder.orderDetails}
+                    columns={productColumns}
+                  />
 
-                <Button
-                  onClick={() => {
-                    setAddProductsModalVisible(true);
-                  }}
-                >
-                  Thêm sản phẩm
-                </Button>
-              </div>
+                  <Button
+                    onClick={() => {
+                      setAddProductsModalVisible(true);
+                    }}
+                  >
+                    Thêm sản phẩm
+                  </Button>
+                </div>
+              </Card>
             )}
           </Col>
-        </Row>
-      )}
+        </Modal>
+      </Row>
     </div>
   );
 }
+
+// {open && (
+//   <Row>
+//     <Col span={24}>
+//       {" "}
+//       {open && (
+//         <Card title="Order Detail">
+//           <div>
+//             {/* Description of order */}
+//             <Descriptions
+//               bordered
+//               column={1}
+//               labelStyle={{ fontWeight: "700" }}
+//             >
+//               <Descriptions.Item label="Trạng thái">
+//                 {selectedOrder.status}
+//               </Descriptions.Item>
+//               <Descriptions.Item label="Khách hàng">
+//                 {selectedOrder.customer?.firstName}{" "}
+//                 {selectedOrder.customer?.lastName}
+//               </Descriptions.Item>
+//               <Descriptions.Item label="Nhân viên">
+//                 {selectedOrder.employee?.firstName}{" "}
+//                 {selectedOrder.employee?.lastName}
+//               </Descriptions.Item>
+//             </Descriptions>
+//             <Divider />
+
+//             {/* Table include product of orderDetails */}
+//             <Table
+//               scroll={{ x: 200 }}
+//               rowKey="_id"
+//               dataSource={selectedOrder.orderDetails}
+//               columns={productColumns}
+//             />
+
+//             <Button
+//               onClick={() => {
+//                 setAddProductsModalVisible(true);
+//               }}
+//             >
+//               Thêm sản phẩm
+//             </Button>
+//           </div>
+//         </Card>
+//       )}
+//     </Col>
+//   </Row>
+// )}

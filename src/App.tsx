@@ -63,7 +63,7 @@ const App: React.FC = () => {
   }, [URL_ENV]);
 
   useEffect(() => {
-    socket.current.emit("addUser", auth.payload._id);
+    socket.current.emit("addUser", auth?.payload?._id);
   }, [auth]);
 
   useEffect(() => {
