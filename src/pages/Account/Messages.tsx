@@ -65,24 +65,25 @@ const Messages: React.FC<any> = () => {
 
   useEffect(() => {
     socket.current.on("getMessage", (data: any) => {
-      if (data == null) {
-        setRefresh((f) => f + 1);
-      } else {
+      console.log("««««« data »»»»»", data);
+      // setRefresh((f) => f + 1);
+      setTimeout(() => {
         setArrivalMessage({
           sender: data.senderId,
           text: data.text,
           createdAt: Date.now(),
         });
-        //or setRefresh((f) => f + 1);
-      }
+      }, 2500);
+
+      // setRefresh((f) => f + 1);
     });
   }, []);
 
   // Get message live socket.io
   useEffect(() => {
     arrivalMessage &&
-      conversationInfor?.friends._id.includes(arrivalMessage.senderId);
-    setMessages((prev: any) => [...prev, arrivalMessage]);
+      // conversationInfor?.friends._id.includes(arrivalMessage.senderId)
+      setMessages((prev: any) => [...prev, arrivalMessage]);
   }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
 
   //Add user for socket.io
@@ -92,8 +93,10 @@ const Messages: React.FC<any> = () => {
 
   //Get User Online IO
   useEffect(() => {
-    socket.current.on("userOnline", (users: any) => {
+    socket.current.on("getUsers", (users: any) => {
+      console.log("««««« users »»»»»", users);
       setUsersOnline(users);
+      setRefresh((f) => f + 1);
     });
   }, [auth]);
 
@@ -101,7 +104,6 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     socket.current.on("userOffline", (users: any) => {
       setUsersOnline(users);
-      console.log("««««« usersOffline »»»»»", users);
     });
   }, [auth]);
 
@@ -117,7 +119,7 @@ const Messages: React.FC<any> = () => {
       } catch (err) {}
     };
     getAllUsers();
-  }, [auth.payload._id]);
+  }, [URL_ENV, auth.payload._id]);
 
   //Get conversation
   useEffect(() => {
@@ -150,7 +152,8 @@ const Messages: React.FC<any> = () => {
         if (res) {
           setRefresh((f) => f + 1);
         }
-      } catch (error) {
+      } catch (error: any) {
+        message.error(`${error.response.data.error}`);
         console.log("««««« error »»»»»", error);
       }
     } else {
@@ -194,14 +197,13 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/messages/${conversationInfor.conversationId}`
+          `${URL_ENV}/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
-        console.log("««««« res »»»»»", res.data);
       } catch (error) {}
     };
     getMessages();
-  }, [conversationInfor, refresh]);
+  }, [URL_ENV, conversationInfor, refresh]);
 
   /// PART OF CHATBOX
 
@@ -338,7 +340,7 @@ const Messages: React.FC<any> = () => {
                 style={{ height: "125px", overflowY: "auto" }}
               >
                 {friendData?.map((friends: any, index: any) => (
-                  <div key={`friend-${index}`}>
+                  <div key={`${friends}-${index}`}>
                     <Button
                       onClick={() => setConversationInfor(friends)}
                       className="text-start"
@@ -358,7 +360,7 @@ const Messages: React.FC<any> = () => {
                 
                   `}
                   extra={
-                    usersOnline?.users?.some(
+                    usersOnline?.some(
                       (user: any) =>
                         user.userId === conversationInfor.friends._id
                     ) ? (
@@ -391,10 +393,7 @@ const Messages: React.FC<any> = () => {
                             key={`${item?._id}-me-${index}`}
                             className="d-flex flex-row-reverse"
                           >
-                            <div
-                              key={`${item?._id}-me-${index}`}
-                              className="w-auto"
-                            >
+                            <div className="w-auto">
                               <h6 className="Name text-body-secondary">
                                 <UserOutlined /> Me
                               </h6>
@@ -408,10 +407,7 @@ const Messages: React.FC<any> = () => {
                           </div>
                         ) : (
                           <div key={`${item?._id}-${index}`} className="d-flex">
-                            <div
-                              key={`${item?._id}-me-${index}`}
-                              className="w-auto"
-                            >
+                            <div className="w-auto">
                               <h6 className="Name text-primary">
                                 <UserOutlined /> {item?.employee?.firstName}{" "}
                                 {item?.employee?.lastName}
