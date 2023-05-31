@@ -67,11 +67,14 @@ const Messages: React.FC<any> = () => {
     socket.current.on("getMessage", (data: any) => {
       console.log("««««« data »»»»»", data);
 
-      setArrivalMessage({
-        sender: data.senderId,
-        text: data.text,
-        createdAt: Date.now(),
-      });
+      setTimeout(() => {
+        setArrivalMessage({
+          sender: data.senderId,
+          text: data.text,
+          createdAt: Date.now(),
+        });
+      }, 2500);
+
       // setRefresh((f) => f + 1);
     });
   }, []);
