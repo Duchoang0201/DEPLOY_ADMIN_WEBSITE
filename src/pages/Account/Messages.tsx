@@ -72,6 +72,8 @@ const Messages: React.FC<any> = () => {
     // Cleanup the socket connection on component unmount
   }, [URL_ENV, socket]);
 
+  // Get message live socket.io
+
   //GET USER ONLINE
   //Get User Online IO
   useEffect(() => {
@@ -171,13 +173,13 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:9000/messages/${conversationInfor.conversationId}`
+          `${URL_ENV}/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
       } catch (error) {}
     };
     getMessages();
-  }, [conversationInfor, refresh]);
+  }, [URL_ENV, conversationInfor, refresh]);
 
   /// PART OF CHATBOX
 
