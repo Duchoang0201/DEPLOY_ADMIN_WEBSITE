@@ -63,49 +63,9 @@ const Messages: React.FC<any> = () => {
     socket.current = io(URL_ENV);
   }, [URL_ENV]);
 
-  // useEffect(() => {
-  //   socket.current.on("getMessage", (data: any) => {
-  //     console.log("««««« data »»»»»", data);
-
-  //     setTimeout(() => {
-  //       setArrivalMessage({
-  //         sender: data.senderId,
-  //         text: data.text,
-  //         createdAt: Date.now(),
-  //       });
-  //     }, 1500);
-  //   });
-  // }, []);
-
-  // // Get message live socket.io
-
-  // useEffect(() => {
-  //   arrivalMessage && setMessages((prev: any) => [...prev, arrivalMessage]);
-  // }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
-
   useEffect(() => {
     socket.current.on("getMessage", (data: any) => {
-      if (data == null) {
-        setRefresh((f) => f + 1);
-      } else {
-        // setArrivalMessage({
-        //   sender: data.senderId,
-        //   text: data.text,
-        //   createdAt: Date.now(),
-        // });
-        setTimeout(() => {
-          setMessages((prev: any) => [
-            ...prev,
-            {
-              sender: data.senderId,
-              text: data.text,
-              createdAt: Date.now(),
-            },
-          ]);
-        }, 3000);
-
-        //or setRefresh((f) => f + 1);
-      }
+      setRefresh((f) => f + 1);
     });
   }, []);
 
