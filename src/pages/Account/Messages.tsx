@@ -43,7 +43,7 @@ const Messages: React.FC<any> = () => {
   //Get Meessage
   const [messages, setMessages] = useState<any[any]>([]);
 
-  const [arrivalMessage, setArrivalMessage] = useState<any>([]);
+  const [arrivalMessage, setArrivalMessage] = useState<any>({});
   //loading
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -59,54 +59,37 @@ const Messages: React.FC<any> = () => {
 
   const socket = useRef<any>();
 
+  // useEffect(() => {
+  //   socket.current = io(URL_ENV);
+  // }, [URL_ENV]);
+
   useEffect(() => {
     socket.current = io(URL_ENV);
-  }, [URL_ENV]);
 
-  useEffect(() => {
     socket.current.on("getMessage", (data: any) => {
-      console.log("««««« data »»»»»", data);
-      // setRefresh((f) => f + 1);
-      setTimeout(() => {
-        setArrivalMessage({
-          sender: data.senderId,
-          text: data.text,
-          createdAt: Date.now(),
-        });
-      }, 2500);
-
-      // setRefresh((f) => f + 1);
+      setRefresh((f) => f + 1);
     });
-  }, []);
+
+    // Cleanup the socket connection on component unmount
+  }, [URL_ENV, socket]);
 
   // Get message live socket.io
   useEffect(() => {
     arrivalMessage &&
-      // conversationInfor?.friends._id.includes(arrivalMessage.senderId)
-      setMessages((prev: any) => [...prev, arrivalMessage]);
+      conversationInfor?.friends._id.includes(arrivalMessage.senderId);
+    setMessages((prev: any) => [...prev, arrivalMessage]);
   }, [arrivalMessage, conversations, conversationInfor?.friends._id]);
 
-  //Add user for socket.io
-  useEffect(() => {
-    socket.current.emit("addUser", auth.payload._id);
-  }, [auth]);
-
+  //GET USER ONLINE
   //Get User Online IO
   useEffect(() => {
     socket.current.on("getUsers", (users: any) => {
-      console.log("««««« users »»»»»", users);
-      setUsersOnline(users);
+      setUsersOnline(
+        users.filter((user: any) => user.userId !== auth.payload._id)
+      );
       setRefresh((f) => f + 1);
     });
   }, [auth]);
-
-  //Get User Online after disconnect IO
-  useEffect(() => {
-    socket.current.on("userOffline", (users: any) => {
-      setUsersOnline(users);
-    });
-  }, [auth]);
-
   //GEt all Users
   useEffect(() => {
     const getAllUsers = async () => {
@@ -152,8 +135,7 @@ const Messages: React.FC<any> = () => {
         if (res) {
           setRefresh((f) => f + 1);
         }
-      } catch (error: any) {
-        message.error(`${error.response.data.error}`);
+      } catch (error) {
         console.log("««««« error »»»»»", error);
       }
     } else {
@@ -197,13 +179,13 @@ const Messages: React.FC<any> = () => {
     const getMessages = async () => {
       try {
         const res = await axios.get(
-          `${URL_ENV}/messages/${conversationInfor.conversationId}`
+          `http://localhost:9000/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
       } catch (error) {}
     };
     getMessages();
-  }, [URL_ENV, conversationInfor, refresh]);
+  }, [conversationInfor, refresh]);
 
   /// PART OF CHATBOX
 
@@ -386,7 +368,7 @@ const Messages: React.FC<any> = () => {
                     ref={scrollRef}
                     style={{ height: "400px", overflowY: "scroll" }}
                   >
-                    {messages.map((item: any, index: number) => (
+                    {messages?.map((item: any, index: number) => (
                       <>
                         {item?.employee?._id === auth.payload._id ? (
                           <div

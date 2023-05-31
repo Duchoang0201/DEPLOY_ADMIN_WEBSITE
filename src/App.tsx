@@ -54,7 +54,7 @@ const App: React.FC = () => {
   const { auth } = useAuthStore((state: any) => state);
   const [user, setUser] = useState<any>();
 
-  /// USER ONLINE_OFFLINE
+  // /// USER ONLINE_OFFLINE
   const socket = useRef<any>();
 
   useEffect(() => {
