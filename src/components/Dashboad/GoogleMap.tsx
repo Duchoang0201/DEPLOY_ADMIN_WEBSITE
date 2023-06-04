@@ -11,7 +11,7 @@ const Address = () => {
     const fetchLocation = async () => {
       try {
         const response = await axios.get(`${URL_ENV}/orders`);
-        const fetchedPositions = response?.data?.map(
+        const fetchedPositions = response?.data?.results?.map(
           (item: any, index: any) => ({
             name: item.position.name,
             position: {

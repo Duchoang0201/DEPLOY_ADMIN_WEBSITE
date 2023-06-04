@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Table,
   Button,
@@ -8,6 +8,7 @@ import {
   Divider,
   Row,
   Col,
+  Select,
 } from "antd";
 import numeral from "numeral";
 import axios from "axios";
@@ -15,32 +16,11 @@ import { axiosClient } from "../../libraries/axiosClient";
 
 export default function Orders() {
   const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+  let API_URL = `${URL_ENV}/orders`;
 
   const [refresh, setRefresh] = useState(0);
   const [addProductsModalVisible, setAddProductsModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  // Products
-  const [products, setProducts] = useState<any>([]);
-  useEffect(() => {
-    axios.get(`${URL_ENV}/products`).then((response) => {
-      setProducts(response.data.results);
-    });
-  }, [URL_ENV, refresh]);
-
-  const [orders, setOrders] = useState<any>([]);
-  useEffect(() => {
-    axiosClient.get("/orders").then((response) => {
-      setOrders(response.data);
-    });
-  }, [refresh]);
-
-  useEffect(() => {
-    // Check if the selected order exists in the updated dataResource
-    const updatedSelectedOrder = orders.find(
-      (order: any) => order.id === selectedOrder?.id
-    );
-    setSelectedOrder(updatedSelectedOrder || null);
-  }, [orders, selectedOrder]);
 
   const handleDelete = async (record: any, index: any) => {
     const currentProduct = record;
@@ -57,11 +37,165 @@ export default function Orders() {
     setRefresh((f) => f + 1);
   };
 
+  //SEARCH CUSTOMER
+  const [customerId, setCustomerId] = useState("");
+
+  const onSearchCustomerName = useMemo(() => {
+    return (record: any) => {
+      if (record) {
+        setCustomerId(record);
+      } else {
+        setCustomerId("");
+      }
+    };
+  }, []);
+
+  //SEARCH METHOD PAY
+
+  const [methodPay, setMethodPay] = useState("");
+
+  const onSearchMethodPay = useMemo(() => {
+    return (record: any) => {
+      if (record) {
+        setMethodPay(record);
+      } else {
+        setMethodPay("");
+      }
+    };
+  }, []);
+
+  //SEARCH METHOD PAY
+
+  const [status, setStatus] = useState("");
+
+  const onSearchStatus = useMemo(() => {
+    return (record: any) => {
+      if (record) {
+        setStatus(record);
+      } else {
+        setStatus("");
+      }
+    };
+  }, []);
+
+  // Products
+  const [products, setProducts] = useState<any>([]);
+  useEffect(() => {
+    axios.get(`${URL_ENV}/products`).then((response) => {
+      setProducts(response.data.results);
+    });
+  }, [URL_ENV, refresh]);
+
+  const URL_FILTER = `${API_URL}?${[
+    customerId && `&customerId=${customerId}`,
+    methodPay && `&methodPay=${methodPay}`,
+    status && `&status=${status}`,
+  ]
+    .filter(Boolean)
+    .join("")}&limit=10`;
+
+  //GET ORDER
+  const [orders, setOrders] = useState<any>([]);
+
+  const listCustomerRef = useRef<any>(null);
+
+  if (orders.length > 0 && !listCustomerRef.current) {
+    listCustomerRef.current = orders;
+  }
+
+  const listCustomer = listCustomerRef.current;
+
+  // Create an array of merged items
+
+  useEffect(() => {
+    axios.get(URL_FILTER).then((response) => {
+      setOrders(response.data.results);
+    });
+  }, [URL_FILTER, refresh]);
+
+  useEffect(() => {
+    // Check if the selected order exists in the updated dataResource
+    const updatedSelectedOrder = orders.find(
+      (order: any) => order.id === selectedOrder?.id
+    );
+    setSelectedOrder(updatedSelectedOrder || null);
+  }, [orders, selectedOrder]);
+
+  /// ORDERDETAILS
   const productColumns = [
     {
       title: "Số lượng",
       dataIndex: "quantity",
       key: "quantity",
+      render: (text: any, record: any) => (
+        <div className="d-flex justify-content-center">
+          {" "}
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={async () => {
+              const response = await axiosClient.get(
+                "orders/" + selectedOrder._id
+              );
+              const currentOrder = response.data;
+              let { orderDetails } = currentOrder;
+              const found = orderDetails.find(
+                (x: any) => x.productId === record.productId
+              );
+              if (found) {
+                found.quantity += 1;
+              } else {
+                orderDetails.push({
+                  productId: record._id,
+                  quantity: 1,
+                });
+              }
+
+              await axiosClient.patch("orders/" + selectedOrder._id, {
+                orderDetails,
+              });
+              setRefresh((f) => f + 1);
+            }}
+          >
+            +
+          </button>
+          <div className="border px-4 py-2 text-center align-self-center justify-content-center ">
+            {text}
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline-danger"
+            onClick={async () => {
+              const response = await axiosClient.get(
+                "orders/" + selectedOrder._id
+              );
+              const currentOrder = response.data;
+              let { orderDetails } = currentOrder;
+              const found = orderDetails.find(
+                (x: any) => x.productId === record.productId
+              );
+              if (found.quantity === 1) {
+                orderDetails = orderDetails.filter(
+                  (x: any) => x.productId !== record.productId
+                );
+
+                await axiosClient.patch("orders/" + selectedOrder._id, {
+                  orderDetails,
+                });
+                setRefresh((f) => f + 1);
+              } else {
+                found.quantity -= 1;
+                await axiosClient.patch("orders/" + selectedOrder._id, {
+                  orderDetails,
+                });
+                setRefresh((f) => f + 1);
+              }
+            }}
+          >
+            -
+          </button>
+        </div>
+      ),
     },
     {
       title: "Tên sản phẩm",
@@ -127,23 +261,113 @@ export default function Orders() {
           </strong>
         );
       },
+      filterDropdown: () => {
+        /// GET LIST OF CUSTOMERID
+        // Create a map to store merged items
+        const mergedMap = new Map();
+
+        // Iterate over the orders array
+        listCustomer?.forEach((item: any) => {
+          const value = item?.customer?._id;
+          const label = `${item.customer?.firstName} ${item.customer?.lastName}`;
+
+          // If the value doesn't exist in the map, add it with the label
+          if (!mergedMap.has(value)) {
+            mergedMap.set(value, { value, label });
+          }
+        });
+        let mergedOrders = Array.from(mergedMap.values());
+
+        return (
+          <div style={{ width: "150px" }}>
+            <Select
+              allowClear
+              showSearch
+              style={{ width: "100%" }}
+              placeholder="Select a product"
+              optionFilterProp="children"
+              onChange={onSearchCustomerName}
+              filterOption={(input: any, option: any) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .indexOf(input.toLowerCase()) >= 0
+              }
+              options={mergedOrders}
+            />
+          </div>
+        );
+      },
     },
     {
-      width: "10%",
+      width: "15%",
 
       title: "Hình thức thanh toán",
       dataIndex: "paymentType",
       key: "paymentType",
+      filterDropdown: () => {
+        return (
+          <div style={{ width: "150px" }}>
+            <Select
+              allowClear
+              showSearch
+              style={{ width: "100%" }}
+              placeholder="Select a product"
+              optionFilterProp="children"
+              onChange={onSearchMethodPay}
+              filterOption={(input: any, option: any) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .indexOf(input.toLowerCase()) >= 0
+              }
+              options={[
+                { label: "CASH", value: "CASH" },
+                { label: "MOMO", value: "MOMO" },
+                { label: "VNPAY", value: "VNPAY" },
+              ]}
+            />
+          </div>
+        );
+      },
     },
     {
-      width: "10%",
-
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      filterDropdown: () => {
+        return (
+          <div style={{ width: "150px" }}>
+            <Select
+              allowClear
+              showSearch
+              style={{ width: "100%" }}
+              placeholder="Select a product"
+              optionFilterProp="children"
+              onChange={onSearchStatus}
+              filterOption={(input: any, option: any) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .indexOf(input.toLowerCase()) >= 0
+              }
+              options={[
+                { label: "WAITING", value: "WAITING" },
+                { label: "COMPLETED", value: "COMPLETED" },
+                { label: "CANCELED", value: "CANCELED" },
+              ]}
+            />
+          </div>
+        );
+      },
+    },
+    {
+      width: "20%",
+      title: "Địa chỉ giao hàng",
+      dataIndex: "shippingAddress",
+      key: "shippingAddress",
     },
 
     {
+      width: "10%",
+
       title: "Nhân viên",
       dataIndex: "employee",
       key: "employee",
@@ -156,8 +380,6 @@ export default function Orders() {
       },
     },
     {
-      width: "10%",
-
       title: "Tổng tiền",
       dataIndex: "totalMoney",
       key: "totalMoney",
@@ -210,6 +432,9 @@ export default function Orders() {
         onCancel={() => {
           setAddProductsModalVisible(false);
         }}
+        onOk={() => {
+          setAddProductsModalVisible(false);
+        }}
       >
         {products &&
           products.map((p: any) => {
@@ -256,7 +481,7 @@ export default function Orders() {
         <Col span={24}>
           {" "}
           <Table
-            scroll={{ x: 200 }}
+            scroll={{ x: "max-content", y: "max-content" }}
             rowKey="_id"
             dataSource={orders}
             columns={columns}
@@ -316,52 +541,3 @@ export default function Orders() {
     </div>
   );
 }
-
-// {open && (
-//   <Row>
-//     <Col span={24}>
-//       {" "}
-//       {open && (
-//         <Card title="Order Detail">
-//           <div>
-//             {/* Description of order */}
-//             <Descriptions
-//               bordered
-//               column={1}
-//               labelStyle={{ fontWeight: "700" }}
-//             >
-//               <Descriptions.Item label="Trạng thái">
-//                 {selectedOrder.status}
-//               </Descriptions.Item>
-//               <Descriptions.Item label="Khách hàng">
-//                 {selectedOrder.customer?.firstName}{" "}
-//                 {selectedOrder.customer?.lastName}
-//               </Descriptions.Item>
-//               <Descriptions.Item label="Nhân viên">
-//                 {selectedOrder.employee?.firstName}{" "}
-//                 {selectedOrder.employee?.lastName}
-//               </Descriptions.Item>
-//             </Descriptions>
-//             <Divider />
-
-//             {/* Table include product of orderDetails */}
-//             <Table
-//               scroll={{ x: 200 }}
-//               rowKey="_id"
-//               dataSource={selectedOrder.orderDetails}
-//               columns={productColumns}
-//             />
-
-//             <Button
-//               onClick={() => {
-//                 setAddProductsModalVisible(true);
-//               }}
-//             >
-//               Thêm sản phẩm
-//             </Button>
-//           </div>
-//         </Card>
-//       )}
-//     </Col>
-//   </Row>
-// )}

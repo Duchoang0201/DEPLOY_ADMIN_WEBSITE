@@ -25,7 +25,7 @@ import {
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
 import axios from "axios";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
 // Date Picker
@@ -87,8 +87,8 @@ function CategoryCRUD() {
       lastName: auth.payload.lastName,
     };
     record.createdDate = new Date().toISOString();
-    if (record.Locked === undefined) {
-      record.Locked = false;
+    if (record.active === undefined) {
+      record.active = false;
     }
 
     axios
@@ -96,19 +96,34 @@ function CategoryCRUD() {
       .then((res) => {
         // UPLOAD FILE
         const { _id } = res.data.result;
-
         const formData = new FormData();
         formData.append("file", file);
 
-        axios
-          .post(`${URL_ENV}/upload/categories/${_id}/image`, formData)
-          .then((respose) => {
-            message.success("Thêm mới thành công!");
-            createForm.resetFields();
+        if (file?.uid && file?.type) {
+          message.loading("On Updating picture on data!!", 1.5);
+          axios
+            .post(`${URL_ENV}/upload/categories/${_id}/image`, formData)
+            .then((respose) => {
+              message.success("Created Successfully!!", 1.5);
+              createForm.resetFields();
+              setOpenCreate(false);
+              setFile(null);
+
+              setTimeout(() => {
+                setRefresh((f) => f + 1);
+              }, 2000);
+            });
+        } else {
+          createForm.resetFields();
+
+          setOpenCreate(false);
+          setFile(null);
+
+          setTimeout(() => {
             setRefresh((f) => f + 1);
-            setOpenCreate(false);
-            setFile(null);
-          });
+          }, 1000);
+          message.success("Created Successfully!!", 1.5);
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -158,46 +173,53 @@ function CategoryCRUD() {
 
   const [isDelete, setIsDelete] = useState("");
   const [isActive, setIsActive] = useState("");
-  const onSearchIsDelete = useCallback((value: any) => {
-    if (value === "active") {
-      setIsActive("true");
-      setIsDelete("");
-    }
-    if (value === "unActive") {
-      setIsActive("false");
-      setIsDelete("");
-    }
-    if (value === "Deleted") {
-      setIsDelete("true");
-      setIsActive("");
-    }
-    if (value !== "active" && value !== "unActive" && value !== "Deleted") {
-      setIsActive("");
-      setIsDelete("");
-    }
-  }, []);
+  const onSearchIsDelete = useMemo(
+    () => (value: any) => {
+      if (value === "active") {
+        setIsActive("true");
+        setIsDelete("");
+      }
+      if (value === "unActive") {
+        setIsActive("false");
+        setIsDelete("");
+      }
+      if (value === "Deleted") {
+        setIsDelete("true");
+        setIsActive("");
+      }
+      if (value !== "active" && value !== "unActive" && value !== "Deleted") {
+        setIsActive("");
+        setIsDelete("");
+      }
+    },
+    []
+  );
 
   //SEARCH DEPEN ON NAME
   const [categoriesName, setCategoriesName] = useState("");
 
-  const onSearchCategoriesName = useCallback((value: any) => {
-    if (value) {
-      setCategoriesName(value);
-    } else {
-      setCategoriesName("");
-    }
+  const onSearchCategoriesName = useMemo(() => {
+    return (value: any) => {
+      if (value) {
+        setCategoriesName(value);
+      } else {
+        setCategoriesName("");
+      }
+    };
   }, []);
 
   //SEARCH DEPEN ON DESCRIPTION
   const [categoryDescription, setCategoryDescription] = useState("");
 
-  const onSearchCategoryDescription = (record: any) => {
-    if (record) {
-      setCategoryDescription(record);
-    } else {
-      setCategoryDescription("");
-    }
-  };
+  const onSearchCategoryDescription = useMemo(() => {
+    return (record: any) => {
+      if (record) {
+        setCategoryDescription(record);
+      } else {
+        setCategoryDescription("");
+      }
+    };
+  }, []);
 
   //Search on Skip and Limit
 
@@ -440,17 +462,19 @@ function CategoryCRUD() {
             onChange={(info) => {
               if (info.file.status !== "uploading") {
                 console.log(info.file);
+                message.loading("On Updating picture on data!!", 1.5);
               }
 
               if (info.file.status === "done") {
-                message.success(`${info.file.name} file uploaded successfully`);
+                setTimeout(() => {
+                  setRefresh(refresh + 1);
+                  message.success(
+                    `${info.file.name} file uploaded successfully`
+                  );
+                }, 2000);
               } else if (info.file.status === "error") {
                 message.error(`${info.file.name} file upload failed.`);
               }
-              setTimeout(() => {
-                console.log("««««« run »»»»»");
-                setRefresh(refresh + 1);
-              }, 3000);
             }}
           >
             <Button icon={<UploadOutlined />} />

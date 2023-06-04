@@ -5,14 +5,12 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusCircleOutlined,
-  PlusOutlined,
   SearchOutlined,
   UnorderedListOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
 import {
   Button,
-  Card,
   Checkbox,
   Form,
   Input,
@@ -24,62 +22,61 @@ import {
   Select,
   Space,
   Table,
-  Image,
   Upload,
+  Image,
+  Card,
 } from "antd";
-import axios from "axios";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import Search from "antd/es/input/Search";
+import axios from "axios";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "../../hooks/useAuthStore";
 
-interface ISupplier {
+interface Product {
+  _id: string;
+  id: string;
   name: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
+  price: number;
+  description: string;
+  category: {
+    _id: string;
+    name: string;
+    description: string;
+    id: number;
+  };
+  image: string;
+  discount: number;
+  stock: number;
+  categoryId: string;
+  supplierId: string;
+  supplier: {
+    _id: string;
+    id: number;
+    name: string;
+    email: string;
+    phoneNumber: string;
+    address: string;
+  };
+  total: number;
 }
-
-function ProductsCRUD() {
+const ProductsCRUD = () => {
   const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
   const [refresh, setRefresh] = useState(0);
   const { auth } = useAuthStore((state: any) => state);
-  const [openDetailPicture, setOpenDetailPicture] = useState(false);
-  const [categories, setCategories] = useState<any>([]);
-  const [suppliers, setSuppliers] = useState([]);
 
+  //File to upload (createProduct)
   const [file, setFile] = useState<any>();
 
-  let API_URL = `${URL_ENV}/products`;
+  //API_URL
+  const API_URL = `${URL_ENV}/products`;
+  const [categories, setCategories] = useState<Array<any>>([]);
+  const [suppliers, setSuppliers] = useState([]);
 
-  // MODAL:
-  // Modal open Create:
-  const [openCreate, setOpenCreate] = useState(false);
-
-  // Modal open Update:
-  const [open, setOpen] = useState(false);
-
-  //Delete Item
-  const [deleteItem, setDeleteItem] = useState<ISupplier>();
-
-  //For fillter:
-
-  //Data fillter
+  //For FILLTER
+  // const [products, setProducts] = useState<Array<any>>([]);
   const [productsTEST, setProductsTEST] = useState<Array<any>>([]);
 
-  // Change fillter (f=> f+1)
-  // const [supplierFilter, setSupplierFilter] = useState(API_URL);
-
-  const [updateId, setUpdateId] = useState<any>();
-
-  //Create, Update Form setting
-  const [createForm] = Form.useForm();
-  const [updateForm] = Form.useForm();
-  const [inforPrice] = Form.useForm();
-  const [inforDiscount] = Form.useForm();
-  const [inforStock] = Form.useForm();
-
-  //TableLoading
+  // const [productsFilter, setProductsFilter] = useState(API_URL);
 
   const [loadingTable, setLoadingTable] = useState(true);
 
@@ -87,120 +84,49 @@ function ProductsCRUD() {
     setTimeout(() => {
       setLoadingTable(false);
     }, 1000); // 5000 milliseconds = 5 seconds
+  }, []);
 
-    //CATEGORY
-    axios
-      .get(`${URL_ENV}/categories`)
-      .then((res) => {
-        setCategories(res.data.results);
-      })
-      .catch((err) => console.log(err));
-    ///SUPPLIER
-    axios
-      .get(`${URL_ENV}/suppliers`)
-      .then((res) => {
-        setSuppliers(res.data.results);
-      })
-      .catch((err) => console.log(err));
-  }, [URL_ENV]);
+  const [open, setOpen] = useState(false);
+  const [openCreate, setOpenCreate] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<Product>();
 
-  //Text of Tyography:
+  const [updateId, setUpdateId] = useState<any>();
 
-  //Handle Create a Data
-  const handleCreate = (record: any) => {
-    record.createdBy = {
-      employeeId: auth.payload._id,
-      firstName: auth.payload.firstName,
-      lastName: auth.payload.lastName,
-    };
-    record.createdDate = new Date().toISOString();
-    if (record.active === undefined) {
-      record.active = false;
-    }
-    record.isDeleted = false;
-    axios
-      .post(API_URL, record)
-      .then((res) => {
-        // UPLOAD FILE
-        const { _id } = res.data.result;
-        console.log("««««« res.data »»»»»", res.data);
-        const formData = new FormData();
-        formData.append("file", file);
+  //   const [pictureForm] = Form.useForm();
+  const [updateForm] = Form.useForm();
+  const [createForm] = Form.useForm();
 
-        if (file?.uid && file?.type) {
-          message.loading("On Updating picture on data!!", 1.5);
-          axios
-            .post(`${URL_ENV}/upload/products/${_id}/image`, formData)
-            .then((respose) => {
-              message.success("Created Successfully!!", 1.5);
-              createForm.resetFields();
-              setOpenCreate(false);
-              setFile(null);
+  /// Open detail PICTURE:
 
-              setTimeout(() => {
-                setRefresh((f) => f + 1);
-              }, 2000);
-            });
-        } else {
-          createForm.resetFields();
+  const [openDetailPicture, setOpenDetailPicture] = useState(false);
 
-          setOpenCreate(false);
-          setFile(null);
+  //Search on SupplierID
+  const [supplierId, setSupplierId] = useState("");
 
-          setTimeout(() => {
-            setRefresh((f) => f + 1);
-          }, 1000);
-          message.success("Created Successfully!!", 1.5);
-        }
-      })
-      .catch((err: any) => {
-        console.log(err);
-      });
-  };
+  //SEARCH DEPEN ON NAME
+  const [productName, setProductName] = useState("");
 
-  //handle Delete Data
-  const handleDelete = useCallback(
-    (record: any) => {
-      axios
-        .delete(API_URL + "/" + record._id)
-        .then((res) => {
-          setRefresh((f) => f + 1);
-          message.success("Delete a product successFully!!", 3);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    },
-    [API_URL]
-  );
+  //Search on Price
+  const [inforPrice] = Form.useForm();
 
-  //Update a data
-  const handleUpdate = (record: any) => {
-    record.updatedBy = {
-      employeeId: auth.payload._id,
-      firstName: auth.payload.firstName,
-      lastName: auth.payload.lastName,
-    };
-    record.updatedDate = new Date().toISOString();
-    if (record.active === undefined) {
-      record.active = false;
-    }
-    if (record.isDeleted === undefined) {
-      record.isDeleted = false;
-    }
-    axios
-      .patch(API_URL + "/" + updateId._id, record)
-      .then((res) => {
-        setRefresh((f) => f + 1);
-        message.success(`Update product ${record.name} successFully!!`, 3);
-        setOpen(false);
-      })
-      .catch((err) => {
-        message.error(err.response.data.message);
-      });
-  };
+  const [fromPrice, setFromPrice] = useState("");
+  const [toPrice, setToPrice] = useState("");
 
-  //SEARCH ISDELETE ITEM
+  //Search on Discount
+  const [inforDiscount] = Form.useForm();
+
+  const [fromDiscount, setFromDiscount] = useState("");
+  const [toDiscount, setToDiscount] = useState("");
+
+  //Search on Stock
+  const [inforStock] = Form.useForm();
+
+  const [fromStock, setFromStock] = useState("");
+  const [toStock, setToStock] = useState("");
+
+  // const [limit, setLimit] = useState(10);
+  const [skip, setSkip] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
 
@@ -225,133 +151,16 @@ function ProductsCRUD() {
     }
   }, []);
 
-  //Search on CategoryID
-  const [categoryId, setCategoryId] = useState("");
-
-  const onSearchCategory = useMemo(() => {
-    return (value: any) => {
-      if (value) {
-        setCategoryId(value);
-      } else {
-        setCategoryId("");
-      }
-    };
-  }, []);
-
-  //Search on SupplierID
-  const [supplierId, setSupplierId] = useState("");
-  const onSearchSupplier = useMemo(() => {
-    return (value: any) => {
-      if (value) {
-        setSupplierId(value);
-      } else {
-        setSupplierId("");
-      }
-    };
-  }, []);
-
-  //SEARCH DEPEN ON NAME
-  const [productName, setProductName] = useState("");
-
-  const onSearchProductName = useMemo(() => {
-    return (record: any) => {
-      setProductName(record);
-    };
-  }, []);
-
-  //Search on Price
-
-  const [fromPrice, setFromPrice] = useState("");
-  const [toPrice, setToPrice] = useState("");
-
-  const submitSearchPrice = useMemo(() => {
-    return (value: any) => {
-      setFromPrice(value.fromPrice ? value.fromPrice : "");
-      setToPrice(value.toPrice ? value.toPrice : "");
-    };
-  }, []);
-  //Search on Discount
-
-  const [fromDiscount, setFromDiscount] = useState("");
-  const [toDiscount, setToDiscount] = useState("");
-
-  const submitSearchDiscount = useMemo(() => {
-    return (value: any) => {
-      setFromDiscount(value.fromDiscount ? value.fromDiscount : "");
-      setToDiscount(value.toDiscount ? value.toDiscount : "");
-    };
-  }, []);
-
-  //Search on Stock
-
-  const [fromStock, setFromStock] = useState("");
-  const [toStock, setToStock] = useState("");
-
-  const submitSearchStock = useMemo(() => {
-    return (value: any) => {
-      setFromStock(value.fromStock ? value.fromStock : "");
-      setToStock(value.toStock ? value.toStock : "");
-    };
-  }, []);
-  //Search on Skip and Limit
-
-  const [pages, setPages] = useState();
-  const [skip, setSkip] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const slideCurrent = (value: any) => {
-    setSkip(value * 10 - 10);
-    setCurrentPage(value);
-  };
-  //Clear fillter
-  const handleClearFillter = () => {
-    setSupplierId("");
-    setProductName("");
-    setCategoryId("");
-    //Price
-    setFromPrice("");
-    setToPrice("");
-    inforPrice.resetFields();
-    //Discount
-    setFromDiscount("");
-    setToDiscount("");
-    inforDiscount.resetFields();
-    //Stock
-    setFromStock("");
-    setToStock("");
-    inforStock.resetFields();
-    setIsActive("");
-    setIsDelete("");
-  };
-  //GET DATA ON FILLTER
-  const queryParams = [
-    productName && `productName=${productName}`,
-    supplierId && `supplierId=${supplierId}`,
-    categoryId && `categoryId=${categoryId}`,
-    fromPrice && `fromPrice=${fromPrice}`,
-    toPrice && `toPrice=${toPrice}`,
-    fromDiscount && `fromDiscount=${fromDiscount}`,
-    toDiscount && `toDiscount=${toDiscount}`,
-    fromStock && `fromStock=${fromStock}`,
-    toStock && `toStock=${toStock}`,
-    skip && `skip=${skip}`,
-    isActive && `active=${isActive}`,
-    isDelete && `isDeleted=${isDelete}`,
-  ]
-    .filter(Boolean)
-    .join("&");
-
-  let URL_FILTER = `${URL_ENV}/products?${queryParams}&limit=10`;
-  // CALL API FILTER PRODUCT DEPEND ON QUERY
+  console.log("««««« isActive »»»»»", isActive);
   useEffect(() => {
-    axios
-      .get(URL_FILTER)
-      .then((res) => {
-        setProductsTEST(res.data.results);
-        setPages(res.data.amountResults);
-      })
-      .catch((err) => console.log(err));
-  }, [refresh, URL_FILTER]);
+    // Check if the selected order exists in the updated dataResource
+    const updatedSelectedOrder = productsTEST.find(
+      (product: any) => product._id === updateId?._id
+    );
+    setUpdateId(updatedSelectedOrder || null);
+  }, [productsTEST, updateId]);
 
+  //Columns of TABLE ANT_DESIGN
   const columns = [
     //No
     {
@@ -496,7 +305,7 @@ function ProductsCRUD() {
               placeholder="Select a product"
               optionFilterProp="children"
               onChange={onSearchCategory}
-              filterOption={(input: any, option: any) =>
+              filterOption={(input, option) =>
                 (option?.label ?? "")
                   .toLowerCase()
                   .indexOf(input.toLowerCase()) >= 0
@@ -851,16 +660,14 @@ function ProductsCRUD() {
             onChange={(info) => {
               if (info.file.status !== "uploading") {
                 console.log(info.file);
-                message.loading("On Updating picture on data!!", 1.5);
               }
 
               if (info.file.status === "done") {
+                message.success(`${info.file.name} file uploaded successfully`);
+
                 setTimeout(() => {
                   setRefresh(refresh + 1);
-                  message.success(
-                    `${info.file.name} file uploaded successfully`
-                  );
-                }, 2000);
+                }, 1000);
               } else if (info.file.status === "error") {
                 message.error(`${info.file.name} file upload failed.`);
               }
@@ -896,6 +703,235 @@ function ProductsCRUD() {
       },
     },
   ];
+
+  //CALL API CATEGORY
+  useEffect(() => {
+    axios
+      .get(`${URL_ENV}/categories`)
+      .then((res) => {
+        setCategories(res.data.results);
+      })
+      .catch((err) => console.log(err));
+  }, [URL_ENV]);
+
+  //CALL API SUPPLIER
+  useEffect(() => {
+    axios
+      .get(`${URL_ENV}/suppliers`)
+      .then((res) => {
+        setSuppliers(res.data.results);
+      })
+      .catch((err) => console.log(err));
+  }, [URL_ENV]);
+
+  //Handle Create a Data
+  const handleCreate = (record: any) => {
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
+    record.createdDate = new Date().toISOString();
+    if (record.active === undefined) {
+      record.active = false;
+    }
+    record.isDeleted = false;
+    axios
+      .post(API_URL, record)
+      .then((res) => {
+        // UPLOAD FILE
+        if (file) {
+          const { _id } = res.data.result;
+
+          const formData = new FormData();
+          formData.append("file", file);
+
+          axios
+            .post(`${URL_ENV}/upload/products/${_id}/image`, formData)
+            .then((respose) => {
+              message.success("Create a product successFully!!", 1.5);
+              createForm.resetFields();
+              setRefresh((f) => f + 1);
+              setOpen(false);
+              setFile(null);
+            })
+            .catch((err) => {
+              message.error("Upload file bị lỗi!");
+            });
+        } else {
+          message.success("Create a product successFully!!", 1.5);
+        }
+      })
+      .catch((err: any) => {
+        console.log(err);
+      });
+  };
+
+  //handle Delete Data
+  const handleDelete = useCallback(
+    (record: any) => {
+      axios
+        .delete(API_URL + "/" + record._id)
+        .then((res) => {
+          setRefresh((f) => f + 1);
+          message.success("Delete a product successFully!!", 3);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    [API_URL]
+  );
+
+  //Update a data
+  const handleUpdate = (record: any) => {
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
+    record.updatedDate = new Date().toISOString();
+    if (record.active === undefined) {
+      record.active = false;
+    }
+    if (record.isDeleted === undefined) {
+      record.isDeleted = false;
+    }
+    axios
+      .patch(API_URL + "/" + updateId._id, record)
+      .then((res) => {
+        setRefresh((f) => f + 1);
+        message.success(`Update product ${record.name} successFully!!`, 3);
+        setOpen(false);
+      })
+      .catch((err) => {
+        message.error(err.response.data.message);
+      });
+  };
+
+  // UPLOAD
+
+  //Search DEPEN ON CATEGORY
+  //Search on CategoryID
+  const [categoryId, setCategoryId] = useState("");
+
+  const onSearchCategory = useMemo(() => {
+    return (value: any) => {
+      if (value) {
+        setCategoryId(value);
+      } else {
+        setCategoryId("");
+      }
+    };
+  }, []);
+
+  // SEARCH DEPEND ON SUPPLIER
+
+  const onSearchSupplier = useMemo(() => {
+    return (value: any) => {
+      if (value) {
+        setSupplierId(value);
+      } else {
+        setSupplierId("");
+      }
+    };
+  }, []);
+
+  //SEARCH DEPEN ON NAME
+
+  const onSearchProductName = useMemo(() => {
+    return (record: any) => {
+      setProductName(record);
+    };
+  }, []);
+
+  //Search on Price
+
+  const submitSearchPrice = useMemo(() => {
+    return (value: any) => {
+      setFromPrice(value.fromPrice ? value.fromPrice : "");
+      setToPrice(value.toPrice ? value.toPrice : "");
+    };
+  }, []);
+
+  //Search on Discount
+
+  const submitSearchDiscount = useMemo(() => {
+    return (value: any) => {
+      setFromDiscount(value.fromDiscount ? value.fromDiscount : "");
+      setToDiscount(value.toDiscount ? value.toDiscount : "");
+    };
+  }, []);
+  //Search on Stock
+
+  const submitSearchStock = useMemo(() => {
+    return (value: any) => {
+      setFromStock(value.fromStock ? value.fromStock : "");
+      setToStock(value.toStock ? value.toStock : "");
+    };
+  }, []);
+
+  //Search on Skip and Limit
+
+  // const [limit, setLimit] = useState(10);
+  const [pages, setPages] = useState();
+
+  const slideCurrent = useMemo(() => {
+    return (value: any) => {
+      setSkip(value * 10 - 10);
+      setCurrentPage(value);
+    };
+  }, []);
+  // Clear all Filter
+
+  const handleClearFillter = () => {
+    setSupplierId("");
+    setProductName("");
+    setCategoryId("");
+    //Price
+    setFromPrice("");
+    setToPrice("");
+    inforPrice.resetFields();
+    //Discount
+    setFromDiscount("");
+    setToDiscount("");
+    inforDiscount.resetFields();
+    //Stock
+    setFromStock("");
+    setToStock("");
+    inforStock.resetFields();
+    setIsActive("");
+    setIsDelete("");
+  };
+  //CALL API PRODUCT FILLTER
+  const queryParams = [
+    productName && `productName=${productName}`,
+    supplierId && `supplierId=${supplierId}`,
+    categoryId && `categoryId=${categoryId}`,
+    fromPrice && `fromPrice=${fromPrice}`,
+    toPrice && `toPrice=${toPrice}`,
+    fromDiscount && `fromDiscount=${fromDiscount}`,
+    toDiscount && `toDiscount=${toDiscount}`,
+    fromStock && `fromStock=${fromStock}`,
+    toStock && `toStock=${toStock}`,
+    skip && `skip=${skip}`,
+    isActive && `active=${isActive}`,
+    isDelete && `isDeleted=${isDelete}`,
+  ]
+    .filter(Boolean)
+    .join("&");
+
+  let URL_FILTER = `${URL_ENV}/products?${queryParams}&limit=10`;
+  // CALL API FILTER PRODUCT DEPEND ON QUERY
+  useEffect(() => {
+    axios
+      .get(URL_FILTER)
+      .then((res) => {
+        setProductsTEST(res.data.results);
+        setPages(res.data.amountResults);
+      })
+      .catch((err) => console.log(err));
+  }, [URL_FILTER]);
 
   return (
     <>
@@ -1126,22 +1162,13 @@ function ProductsCRUD() {
             name="file"
           >
             <Upload
-              maxCount={1}
-              listType="picture-card"
               showUploadList={true}
               beforeUpload={(file) => {
                 setFile(file);
                 return false;
               }}
             >
-              {!file ? (
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8 }}>Upload</div>
-                </div>
-              ) : (
-                ""
-              )}
+              <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
             </Upload>
           </Form.Item>
         </Form>
@@ -1519,6 +1546,6 @@ function ProductsCRUD() {
       />
     </>
   );
-}
+};
 
 export default ProductsCRUD;

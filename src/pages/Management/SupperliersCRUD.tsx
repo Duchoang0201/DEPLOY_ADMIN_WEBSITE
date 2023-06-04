@@ -93,7 +93,6 @@ function SupperliersCRUD() {
     axios
       .post(API_URL, record)
       .then((res) => {
-        console.log(res.data);
         setRefresh((f) => f + 1);
         setOpenCreate(false);
 
@@ -110,7 +109,6 @@ function SupperliersCRUD() {
     axios
       .delete(API_URL + "/" + record._id)
       .then((res) => {
-        console.log(res.statusText);
         message.success(" Delete item sucessfully!!", 1.5);
         setRefresh((f) => f + 1);
       })
@@ -135,7 +133,6 @@ function SupperliersCRUD() {
     axios
       .patch(API_URL + "/" + updateId, record)
       .then((res) => {
-        console.log(res);
         setOpen(false);
         setOpenCreate(false);
         setRefresh((f) => f + 1);
@@ -154,7 +151,6 @@ function SupperliersCRUD() {
   const [isDelete, setIsDelete] = useState("");
   const [isActive, setIsActive] = useState("");
   const onSearchIsDelete = useCallback((value: any) => {
-    console.log("««««« value »»»»»", value);
     if (value === "active") {
       setIsActive("true");
       setIsDelete("");
@@ -177,7 +173,6 @@ function SupperliersCRUD() {
   const [supplierName, setSuplierName] = useState("");
 
   const onSearchSupplierName = useCallback((value: any) => {
-    console.log(value);
     if (value) {
       setSuplierName(value);
     } else {
@@ -399,16 +394,6 @@ function SupperliersCRUD() {
                   };
                 })}
               />
-              {/* {supplierId && (
-                <span style={{ width: "20%" }}>
-                  <Button
-                    onClick={() => {
-                      setSupplierId("");
-                    }}
-                    icon={<ClearOutlined />}
-                  />
-                </span>
-              )} */}
             </div>
           </>
         );

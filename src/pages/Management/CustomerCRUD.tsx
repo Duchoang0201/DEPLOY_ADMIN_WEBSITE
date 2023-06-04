@@ -24,7 +24,7 @@ import {
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
 import axios from "axios";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
 // Date Picker
@@ -104,22 +104,35 @@ function CustomerCRUD() {
       .then((res) => {
         // UPLOAD FILE
         const { _id } = res.data.result;
-
+        console.log("««««« res.data »»»»»", res.data);
         const formData = new FormData();
         formData.append("file", file);
 
-        axios
-          .post(`${URL_ENV}/upload/customers/${_id}/image`, formData)
-          .then((respose) => {
-            message.success("Thêm mới thành công!");
-            createForm.resetFields();
-            setOpenCreate(false);
-            setFile(null);
+        if (file?.uid && file?.type) {
+          message.loading("On Updating picture on data!!", 1.5);
+          axios
+            .post(`${URL_ENV}/upload/customers/${_id}/image`, formData)
+            .then((respose) => {
+              message.success("Created Successfully!!", 1.5);
+              createForm.resetFields();
+              setOpenCreate(false);
+              setFile(null);
 
-            setTimeout(() => {
-              setRefresh((f) => f + 1);
-            }, 2000);
-          });
+              setTimeout(() => {
+                setRefresh((f) => f + 1);
+              }, 2000);
+            });
+        } else {
+          createForm.resetFields();
+
+          setOpenCreate(false);
+          setFile(null);
+
+          setTimeout(() => {
+            setRefresh((f) => f + 1);
+          }, 1000);
+          message.success("Created Successfully!!", 1.5);
+        }
       })
       .catch((err) => {
         console.log(err);
@@ -165,13 +178,17 @@ function CustomerCRUD() {
   //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
 
   const [isLocked, setIsLocked] = useState("");
-  const onSearchIsLocked = useCallback((value: any) => {
-    if (value) {
-      setIsLocked(value);
-    } else {
-      setIsLocked("");
-    }
-  }, []);
+
+  const onSearchIsLocked = useMemo(
+    () => (value: any) => {
+      if (value) {
+        setIsLocked(value);
+      } else {
+        setIsLocked("");
+      }
+    },
+    []
+  );
 
   //SEARCH DEPEN ON NAME
   const [customerEmail, setCustomerEmail] = useState("");
@@ -597,16 +614,19 @@ function CustomerCRUD() {
             onChange={(info) => {
               if (info.file.status !== "uploading") {
                 console.log(info.file);
+                message.loading("On Updating picture on data!!", 1.5);
               }
 
               if (info.file.status === "done") {
-                message.success(`${info.file.name} file uploaded successfully`);
+                setTimeout(() => {
+                  setRefresh(refresh + 1);
+                  message.success(
+                    `${info.file.name} file uploaded successfully`
+                  );
+                }, 2000);
               } else if (info.file.status === "error") {
                 message.error(`${info.file.name} file upload failed.`);
               }
-              setTimeout(() => {
-                setRefresh(refresh + 1);
-              }, 2000);
             }}
           >
             <Button icon={<UploadOutlined />} />
@@ -962,7 +982,7 @@ function CustomerCRUD() {
             </FormItem>
             <Form.Item
               labelCol={{
-                span: 7,
+                span: 8,
               }}
               wrapperCol={{
                 span: 16,

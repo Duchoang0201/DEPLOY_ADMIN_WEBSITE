@@ -1,53 +1,70 @@
-import { create } from "zustand";
+import create from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist, createJSONStorage } from "zustand/middleware";
-import axios from "axios";
 
-interface isLogin {
-  email: string;
-  password: string;
-}
-export const useAuthStore = create(
+export const useCartStore = create(
   devtools(
     persist(
-      (set, get) => ({
-        auth: null,
-
-        login: async ({ email, password }: isLogin) => {
-          try {
-            const URL_ENV =
-              process.env.REACT_APP_BASE_URL || "http://localhost:9000";
-
-            const response = await axios.post(`${URL_ENV}/employees/login`, {
-              email: email,
-              password: password,
-            });
-            set({ auth: response.data }, false, { type: "auth/login-success" });
-          } catch (err) {
-            set({ auth: null }, false, { type: "auth/login-error" });
-            throw new Error("Login failed");
+      (set: any, get: any) => ({
+        items: [],
+        add: ({ product, quantity }: any) => {
+          const items = get().items;
+          const found = items.find(
+            (x: any) => x?.product?._id === product?._id
+          );
+          if (found) {
+            found.quantity++;
+          } else {
+            items.push({ product, quantity }); // Initialize quantity to 1 for new items
           }
+
+          return set({ items: [...items] }, false, { type: "carts/addToCart" });
         },
-        logout: () => {
-          // AXIOS: Call 1 api login => user
-          return set({ auth: null }, false, { type: "auth/logout-success" });
+        remove: (id: any) => {
+          const items = get().items;
+          const newItems = items.filter((x: any) => x.product._id !== id);
+          return set({ items: [...newItems] }, false, {
+            type: "carts/removeFromCart",
+          });
+        },
+
+        increase: (id: any) => {
+          const items = get().items;
+          const found = items.find((x: any) => x.product._id === id);
+          if (found) {
+            found.quantity++;
+            return set({ items: [...items] }, false, {
+              type: "carts/increase",
+            });
+          }
+          return null; // handle the case when item is not found
+        },
+
+        decrease: (id: any) => {
+          const items = get().items;
+          const found = items.find((x: any) => x.product._id === id);
+          if (found) {
+            if (found.quantity === 1) {
+              const newItems = items.filter(
+                (x: any) => x.product._id !== found.product.id
+              );
+              return set({ items: [...newItems] }, false, {
+                type: "carts/decrease",
+              });
+            } else {
+              found.quantity--;
+              return set({ items: [...items] }, false, {
+                type: "carts/decrease",
+              });
+            }
+          }
+          return null; // handle the case when item is not found
         },
       }),
       {
-        name: "adminWeb-storage", // unique name
+        name: "count_Cart", // unique name
         storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used
       }
     )
   )
 );
-
-//persist ( DUY TRÌ TRẠNG THÁI CỦA STORE'STATE qua các lần TẢI LẠI, STATE KHÔNG THAY ĐỔI KHI F5)
-// Zustand's persist is another optional package that can be used
-// to persist your store's state across page reloads or browser sessions.
-
-// With persist, you can store your store's state in localStorage, sessionStorage,
-// or any other custom storage solution. This way, when the user refreshes or closes the page,
-// the state is automatically restored when the page is reopened.
-
-// Devtools
-// Usage with a plain action store, it will log actions as "setState"

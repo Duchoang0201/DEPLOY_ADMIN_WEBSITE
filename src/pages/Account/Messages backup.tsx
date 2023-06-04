@@ -250,6 +250,7 @@ const Messages: React.FC<any> = () => {
     fetchData();
   }, [conversations, auth.payload._id, URL_ENV]);
 
+  console.log("««««« friendData »»»»»", friendData);
   return (
     <>
       <Card style={{ minHeight: "84vh" }}>
@@ -374,9 +375,12 @@ const Messages: React.FC<any> = () => {
                     style={{ height: "400px", overflowY: "scroll" }}
                   >
                     {messages?.map((item: any, index: number) => (
-                      <div key={`${item?.employee._id}-${index}`}>
+                      <>
                         {item?.employee?._id === auth.payload._id ? (
-                          <div className="d-flex flex-row-reverse">
+                          <div
+                            key={`${item?.employee._id}-me-${index}`}
+                            className="d-flex flex-row-reverse"
+                          >
                             <div className="w-auto">
                               <h6 className="Name text-body-secondary">
                                 <UserOutlined /> Me
@@ -391,8 +395,8 @@ const Messages: React.FC<any> = () => {
                           </div>
                         ) : (
                           <div
+                            key={`${item?.employee.firstName}-${index}`}
                             className="d-flex"
-                            key={`${item?.employee._id}-${index}`}
                           >
                             <div className="w-auto">
                               <h6 className="Name text-primary">
@@ -408,7 +412,7 @@ const Messages: React.FC<any> = () => {
                             </div>
                           </div>
                         )}
-                      </div>
+                      </>
                     ))}
                   </div>
 

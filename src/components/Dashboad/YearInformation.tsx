@@ -16,6 +16,7 @@ const YearInformation = (props: Props) => {
 
   const [orderTotal, setOrderTotal] = useState<any>();
   const [totalUser, setTotalUser] = useState<any>();
+  const [listOrders, setListOrders] = useState<any>();
   const [productsActive, setProductsActive] = useState<any>();
   useEffect(() => {
     axios.get(`${URL_ENV}/questions/23`).then((res) => {
@@ -23,6 +24,9 @@ const YearInformation = (props: Props) => {
     });
     axios.get(`${URL_ENV}/customers`).then((res) => {
       setTotalUser(res.data.amountResults);
+    });
+    axios.get(`${URL_ENV}/orders`).then((res) => {
+      setListOrders(res.data);
     });
     axios.get(`${URL_ENV}/products?active=true`).then((res) => {
       setProductsActive(res.data.amountResults);
@@ -70,7 +74,7 @@ const YearInformation = (props: Props) => {
                 <Space>
                   <Statistic
                     title="Order's total"
-                    value={orderTotal?.result?.length}
+                    value={listOrders?.amountResults}
                     formatter={formatter}
                     style={{ fontWeight: "bold" }}
                   />{" "}
