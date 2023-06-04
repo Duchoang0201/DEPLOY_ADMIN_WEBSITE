@@ -151,7 +151,6 @@ const ProductsCRUD = () => {
     }
   }, []);
 
-  console.log("««««« isActive »»»»»", isActive);
   useEffect(() => {
     // Check if the selected order exists in the updated dataResource
     const updatedSelectedOrder = productsTEST.find(
