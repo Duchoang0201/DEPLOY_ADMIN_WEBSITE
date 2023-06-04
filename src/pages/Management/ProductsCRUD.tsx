@@ -740,7 +740,7 @@ function ProductsCRUD() {
     },
     //Discount
     {
-      width: "1%",
+      width: "2%",
 
       title: () => {
         return (

@@ -344,7 +344,7 @@ function SupperliersCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              placeholder="input search text"
+              placeholder="Enter email"
               onSearch={onSearchProductEmail}
               style={{ width: 200 }}
             />
@@ -419,7 +419,7 @@ function SupperliersCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              placeholder="input search text"
+              placeholder="Enter phone number"
               onSearch={onSearchProductPhone}
               style={{ width: 200 }}
             />
@@ -447,7 +447,7 @@ function SupperliersCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              placeholder="input search text"
+              placeholder="Enter address"
               onSearch={onSearchProductAddress}
               style={{ width: 200 }}
             />

@@ -379,7 +379,7 @@ function CategoryCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              placeholder="input search text"
+              placeholder="Enter name"
               onSearch={onSearchCategoriesName}
               style={{ width: 200 }}
             />
@@ -408,7 +408,7 @@ function CategoryCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              placeholder="input search text"
+              placeholder="Enter description"
               onSearch={onSearchCategoryDescription}
               style={{ width: 200 }}
             />
