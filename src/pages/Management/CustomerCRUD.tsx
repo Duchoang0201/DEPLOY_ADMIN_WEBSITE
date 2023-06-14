@@ -254,7 +254,6 @@ function CustomerCRUD() {
     const formattedRecord = record.map((date: any) =>
       dayjs(date).format("YYYY/MM/DD")
     );
-    console.log("««««« formattedRecord »»»»»", formattedRecord);
     if (formattedRecord) {
       setCustomerBirthdayFrom(formattedRecord[0]);
       setCustomerBirthdayTo(formattedRecord[1]);
@@ -362,7 +361,7 @@ function CustomerCRUD() {
 
                   {
                     value: "true",
-                    label: "Deleted",
+                    label: "Locked",
                   },
                 ]}
               />

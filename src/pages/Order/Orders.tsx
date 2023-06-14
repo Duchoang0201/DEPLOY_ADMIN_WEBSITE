@@ -9,10 +9,14 @@ import {
   Row,
   Col,
   Select,
+  Space,
+  Popconfirm,
+  message,
 } from "antd";
 import numeral from "numeral";
 import axios from "axios";
 import { axiosClient } from "../../libraries/axiosClient";
+import { RestOutlined, SearchOutlined } from "@ant-design/icons";
 
 export default function Orders() {
   const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
@@ -155,6 +159,7 @@ export default function Orders() {
                 orderDetails,
               });
               setRefresh((f) => f + 1);
+              message.success("Plus a product sucessfully!!", 1.5);
             }}
           >
             +
@@ -183,12 +188,17 @@ export default function Orders() {
                   orderDetails,
                 });
                 setRefresh((f) => f + 1);
+                message.success(
+                  "Remove a product out of order sucessfully!!",
+                  1.5
+                );
               } else {
                 found.quantity -= 1;
                 await axiosClient.patch("orders/" + selectedOrder._id, {
                   orderDetails,
                 });
                 setRefresh((f) => f + 1);
+                message.success("Minus a product sucessfully!!", 1.5);
               }
             }}
           >
@@ -333,6 +343,15 @@ export default function Orders() {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      render: (text: any, record: any) => {
+        return text === "WAITING" ? (
+          <div className="text-primary">{text}</div>
+        ) : text === "COMPLETED" ? (
+          <div className="text-success">{text}</div>
+        ) : (
+          <div className="text-danger">{text}</div>
+        );
+      },
       filterDropdown: () => {
         return (
           <div style={{ width: "150px" }}>
@@ -407,13 +426,46 @@ export default function Orders() {
       key: "actions",
       render: (text: any, record: any, index: any) => {
         return (
-          <Button
-            onClick={() => {
-              setSelectedOrder(record);
-            }}
-          >
-            Select
-          </Button>
+          <Space className="text-end">
+            <Button
+              onClick={() => {
+                setSelectedOrder(record);
+              }}
+              shape="circle"
+              icon={<SearchOutlined />}
+            />
+            <Popconfirm
+              okText="Delete"
+              okType="danger"
+              onConfirm={async () => {
+                const handleCanceled: any = await axios.patch(
+                  `${URL_ENV}/orders/${record._id}`,
+                  {
+                    status: "CANCELED",
+                  }
+                );
+
+                if (handleCanceled?.data?._id) {
+                  await axios
+                    .post(`${URL_ENV}/products/orderm/${record._id}/stock`)
+                    .then((response) => {
+                      setTimeout(() => {
+                        setRefresh((f) => f + 1);
+                        message.success("Hủy đơn hàng thành công !!", 1.5);
+                      }, 2000);
+                    })
+                    .catch((error) => {
+                      console.error(error);
+                    });
+                } else {
+                  message.error(`SYSTEM ERROR !!!`);
+                }
+              }}
+              title={"Bạn chắc chắn sẽ hủy đơn hàng?"}
+            >
+              <Button danger icon={<RestOutlined />}></Button>
+            </Popconfirm>
+          </Space>
         );
       },
     },
@@ -465,7 +517,10 @@ export default function Orders() {
                       orderDetails,
                     });
                     setRefresh((f) => f + 1);
-
+                    message.success(
+                      `Add product: "${p.name}"  into order sucessfully!!`,
+                      1.5
+                    );
                     // setAddProductsModalVisible(false);
 
                     // RELOAD //

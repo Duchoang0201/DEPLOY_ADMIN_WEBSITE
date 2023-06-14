@@ -1,21 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { Card, Col, Divider, Row } from "antd";
+import { Card, Col, DatePicker, Divider, Row } from "antd";
 import axios from "axios";
 import { Bar, Column } from "@ant-design/plots";
+import moment from "moment";
+
 type Props = {};
 const GeneralInformation = (props: Props) => {
   const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
+  const [getYearRevenue, setGetYearRevenue] = useState<any>(moment().year());
+  const [getYearTopEmployee, setGetYearTopEmployee] = useState<any>(
+    moment().year()
+  );
   const [totalMonth, setTotalMonth] = useState<any>();
   const [lineData, setLineData] = useState<any>();
   useEffect(() => {
-    axios.get(`${URL_ENV}/questions/23b`).then((res) => {
-      setTotalMonth(res.data);
-    });
-    axios.get(`${URL_ENV}/questions/27b`).then((res) => {
-      setLineData(res.data);
-    });
-  }, [URL_ENV]);
+    axios
+      .post(`${URL_ENV}/questions/23b`, { year: getYearRevenue })
+      .then((res) => {
+        setTotalMonth(res.data);
+      });
+  }, [URL_ENV, getYearRevenue]);
+  useEffect(() => {
+    axios
+      .post(`${URL_ENV}/questions/27b`, { year: getYearTopEmployee })
+      .then((res) => {
+        setLineData(res.data);
+      });
+  }, [URL_ENV, getYearTopEmployee]);
+
   let data: any = [];
   if (totalMonth && totalMonth.length) {
     data = totalMonth.map((item: any) => ({
@@ -23,6 +36,19 @@ const GeneralInformation = (props: Props) => {
       revenue: item.revenue,
     }));
   }
+
+  const handlePickYearRevenue = (value: any) => {
+    if (value) {
+      const year = value.year();
+      setGetYearRevenue(year);
+    }
+  };
+  const handlePickYearTopEmployee = (value: any) => {
+    if (value) {
+      const year = value.year();
+      setGetYearTopEmployee(year);
+    }
+  };
 
   const config = {
     data: data,
@@ -206,7 +232,13 @@ const GeneralInformation = (props: Props) => {
       <Divider orientation="left">Genaral Information</Divider>
       <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
         <Col xs={24} xl={10}>
-          <Card title={"Doanh thu trong năm"} bordered={false}>
+          <Card
+            title={"Doanh thu trong năm"}
+            bordered={false}
+            extra={
+              <DatePicker onChange={handlePickYearRevenue} picker="year" />
+            }
+          >
             <div
               className=" px-3 py-3 rounded-4"
               style={{
@@ -224,6 +256,9 @@ const GeneralInformation = (props: Props) => {
             title={`Top nhân viên bán hàng xuất sắc trong năm`}
             bordered={false}
             // style={{ width: "100%" }}
+            extra={
+              <DatePicker onChange={handlePickYearTopEmployee} picker="year" />
+            }
           >
             <div
               className="px-3 py-3"

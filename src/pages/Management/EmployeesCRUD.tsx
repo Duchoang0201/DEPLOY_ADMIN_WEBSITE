@@ -104,9 +104,12 @@ function EmployeeCRUD() {
       .post(API_URL, record)
       .then((res) => {
         // UPLOAD FILE
-        console.log("««««« res »»»»»", res);
         const { _id } = res.data.result;
+
+        ///FormData() giúp sumbit form mà k có nút sumbit
+        //Túm váy lại, với FormData, chúng ta có thể submit dữ liệu lên server thông qua AJAX như là đang submit form bình thường.
         const formData = new FormData();
+        //Phương thức append cho phép chúng ta chèn thêm một cặp key => value vào trong FormData
         formData.append("file", file);
 
         if (file?.uid && file?.type) {
@@ -136,6 +139,7 @@ function EmployeeCRUD() {
       })
       .catch((err) => {
         console.log(err);
+        message.error(`${err?.response?.data?.message}`);
       });
   };
   //Delete a Data
@@ -160,7 +164,9 @@ function EmployeeCRUD() {
     record.updatedDate = new Date().toISOString();
 
     record.birthday = record.birthday.toISOString();
-    console.log("««««« record »»»»»", record);
+    if (record.isAdmin === undefined) {
+      record.isAdmin = false;
+    }
     axios
       .patch(API_URL + "/" + updateId._id, record)
       .then((res) => {
@@ -358,7 +364,7 @@ function EmployeeCRUD() {
 
                   {
                     value: "true",
-                    label: "Deleted",
+                    label: "Locked",
                   },
                 ]}
               />
@@ -376,7 +382,7 @@ function EmployeeCRUD() {
       dataIndex: "imageUrl",
       render: (text: any, record: any, index: any) => {
         return (
-          <div>
+          <div className="">
             {record.imageUrl && (
               <img
                 src={`${URL_ENV}` + record.imageUrl}
@@ -978,9 +984,23 @@ function EmployeeCRUD() {
             >
               <Switch />
             </FormItem>
+            <FormItem
+              labelCol={{
+                span: 8,
+              }}
+              wrapperCol={{
+                span: 16,
+              }}
+              hasFeedback
+              label="isAdmin"
+              name="isAdmin"
+              valuePropName="checked"
+            >
+              <Switch />
+            </FormItem>
             <Form.Item
               labelCol={{
-                span: 7,
+                span: 8,
               }}
               wrapperCol={{
                 span: 16,

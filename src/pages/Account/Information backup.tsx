@@ -12,6 +12,7 @@ import {
   Popconfirm,
   Row,
   Typography,
+  Upload,
   message,
 } from "antd";
 import {
@@ -19,6 +20,7 @@ import {
   HomeOutlined,
   MailOutlined,
   PhoneOutlined,
+  UploadOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
@@ -60,7 +62,6 @@ const Information = (props: Props) => {
     axios
       .patch(`${URL_ENV}/employees/${auth.payload._id}`, confirmData)
       .then((res) => {
-        console.log(res);
         setRefresh((f) => f + 1);
         message.success("Update a data successFully!!", 1.5);
       })
@@ -220,7 +221,35 @@ const Information = (props: Props) => {
             <Col xs={24} xl={5}>
               <Card bordered={false} style={{ width: "90%" }}>
                 <div className="text-center">
-                  <Avatar size={64} icon={<UserOutlined />} />
+                  <div>
+                    <Avatar size={64} icon={<UserOutlined />} />
+                  </div>
+                  <Upload
+                    showUploadList={false}
+                    name="file"
+                    action={`${URL_ENV}/upload/employees/${auth.payload._id}/image`}
+                    headers={{ authorization: "authorization-text" }}
+                    onChange={(info) => {
+                      if (info.file.status !== "uploading") {
+                        console.log(info.file);
+                      }
+
+                      if (info.file.status === "done") {
+                        message.success(
+                          `${info.file.name} file uploaded successfully`
+                        );
+
+                        setTimeout(() => {
+                          console.log("««««« run »»»»»");
+                          setRefresh(refresh + 1);
+                        }, 1000);
+                      } else if (info.file.status === "error") {
+                        message.error(`${info.file.name} file upload failed.`);
+                      }
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />} />
+                  </Upload>
                   <p className="py-2">
                     {user.firstName} {user.lastName}
                   </p>

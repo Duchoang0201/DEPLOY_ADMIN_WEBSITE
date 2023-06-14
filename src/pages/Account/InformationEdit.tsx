@@ -43,7 +43,7 @@ const AccountInformation = (props: Props) => {
     setLoading(false);
   }, 1000);
 
-  const E_URL = `${URL_ENV}/employees/${auth?.payload._id}`;
+  const E_URL = `${URL_ENV}/customers/${auth?.payload._id}`;
 
   useEffect(() => {
     axios
@@ -55,27 +55,27 @@ const AccountInformation = (props: Props) => {
   }, [E_URL, refresh]);
 
   const handleUpdate = (record: any) => {
-    const confirmData: any = { [selectItem]: updateData[selectItem] };
+    const confirmData = { [selectItem]: updateData[selectItem] };
 
     if (updateData) {
       if (selectItem === "password") {
         axios
-          .post(`${URL_ENV}/employees/login`, {
+          .post(`${URL_ENV}/customers/login`, {
             email: user.email,
             password: updateData["checkPassword"],
           })
           .then(() => {
             axios
-              .patch(`${URL_ENV}/employees/${auth.payload._id}`, {
+              .patch(`${URL_ENV}/customers/${auth.payload._id}`, {
                 password: updateData["newPassword"],
               })
               .then((res) => {
+                console.log(res);
                 setRefresh((f) => f + 1);
                 updateForm.resetFields();
                 message.success(`Update ${selectItem} successFully!!`, 1.5);
               })
               .catch((err) => {
-                console.log("««««« err »»»»»", err);
                 message.error(`Cập nhật không thành công`, 1.5);
               });
           })
@@ -87,8 +87,9 @@ const AccountInformation = (props: Props) => {
           });
       } else {
         axios
-          .patch(`${URL_ENV}/employees/${auth.payload._id}`, confirmData)
+          .patch(`${URL_ENV}/customers/${auth.payload._id}`, confirmData)
           .then((res) => {
+            console.log(res);
             setRefresh((f) => f + 1);
             updateForm.resetFields();
 
@@ -118,7 +119,7 @@ const AccountInformation = (props: Props) => {
                 <Upload
                   showUploadList={false}
                   name="file"
-                  action={`${URL_ENV}/upload/employees/${auth?.payload._id}/image`}
+                  action={`${URL_ENV}/upload/customers/${auth?.payload._id}/image`}
                   headers={{ authorization: "authorization-text" }}
                   onChange={(info) => {
                     if (info.file.status !== "uploading") {
@@ -306,56 +307,45 @@ const AccountInformation = (props: Props) => {
                     </Popconfirm>
                   </Collapse.Panel>
                   <Collapse.Panel header="Password" key="6">
-                    {" "}
-                    <div>
+                    <div className="d-flex justify-content-evenly">
                       {" "}
-                      <Form.Item
-                        labelCol={{
-                          span: 8,
-                        }}
-                        wrapperCol={{
-                          span: 10,
-                        }}
-                        name="checkPassword"
-                        label="Mật khẩu hiện tại:"
-                      >
-                        <Input.Password placeholder={`********`} />
-                      </Form.Item>
-                    </div>
-                    <div className="">
-                      {" "}
-                      <Form.Item
-                        labelCol={{
-                          span: 8,
-                        }}
-                        wrapperCol={{
-                          span: 10,
-                        }}
-                        name="newPassword"
-                        label="Mật khẩu mới:"
-                      >
-                        <Input.Password placeholder={`********`} />
-                      </Form.Item>
-                    </div>
-                    <div className="text-end">
-                      {" "}
-                      <Popconfirm
-                        title="Edit profile"
-                        description="Are you sure to edit this password?"
-                        okText="Yes"
-                        cancelText="No"
-                        onConfirm={handleUpdate}
-                      >
-                        <Button
-                          style={{ width: "30px", right: "-4px" }}
-                          type="primary"
-                          htmlType="submit"
-                          icon={<EditFilled />}
-                          onClick={() => {
-                            setSelectItem("password");
-                          }}
-                        />
-                      </Popconfirm>
+                      <div>
+                        {" "}
+                        <span>Mật khẩu hiện tại: </span>
+                        <Form.Item name="checkPassword" noStyle>
+                          <Input.Password
+                            style={{ width: 160 }}
+                            placeholder={`********`}
+                          />
+                        </Form.Item>
+                      </div>
+                      <div className="px-4">
+                        {" "}
+                        <span>Mật khẩu mới: </span>
+                        <Form.Item name="newPassword" noStyle>
+                          <Input.Password
+                            style={{ width: 160 }}
+                            placeholder={`********`}
+                          />
+                        </Form.Item>
+                        <Popconfirm
+                          title="Edit profile"
+                          description="Are you sure to edit this password?"
+                          okText="Yes"
+                          cancelText="No"
+                          onConfirm={handleUpdate}
+                        >
+                          <Button
+                            style={{ width: "30px", right: "-4px" }}
+                            type="primary"
+                            htmlType="submit"
+                            icon={<EditFilled />}
+                            onClick={() => {
+                              setSelectItem("password");
+                            }}
+                          />
+                        </Popconfirm>
+                      </div>
                     </div>
                   </Collapse.Panel>
                 </Collapse>
