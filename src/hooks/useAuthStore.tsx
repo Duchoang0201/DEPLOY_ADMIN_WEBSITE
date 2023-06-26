@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist, createJSONStorage } from "zustand/middleware";
 import axios from "axios";
+import { message } from "antd";
 interface isLogin {
   email: string;
   password: string;
@@ -23,19 +24,24 @@ export const useAuthStore = create(
                 email: email,
                 password: password,
               });
-              loginData = response.data; // Store the response data
+              console.log("««««« response »»»»»", response);
+              if (response.data.payload._id) {
+                loginData = response.data; // Store the response data
+                set({ auth: response.data }, false, {
+                  type: "auth/login-success",
+                });
 
-              set({ auth: response.data }, false, {
-                type: "auth/login-success",
-              });
-              if (loginData && loginData.payload && loginData.payload._id) {
+                //lastActivity
                 axios.patch(`${URL_ENV}/employees/${loginData.payload._id}`, {
                   lastActivity: new Date(),
                 });
+              } else {
+                message.error("Login unsuccessfully!!");
               }
-            } catch (err) {
+            } catch (err: any) {
               set({ auth: null }, false, { type: "auth/login-error" });
-              throw new Error("Login failed");
+              // throw new Error("Login failed");
+              throw message.error("Account's not found", 1.5);
             }
           },
           logout: async () => {
