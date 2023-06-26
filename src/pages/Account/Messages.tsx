@@ -20,6 +20,9 @@ import {
   SendOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+
+
+//Time stamp 
 import { format } from "timeago.js";
 // Socket;
 import { io } from "socket.io-client";
@@ -219,7 +222,7 @@ const Messages: React.FC<any> = () => {
             const response = await axios.get(
               `${URL_ENV}/employees/${otherMembers}`
             );
-            const friendData = response.data.result; // Assuming the friend data is in the 'result' property
+            const friendData = response.data.result;
             const friendInfo = {
               conversationId: item._id,
               friends: friendData
