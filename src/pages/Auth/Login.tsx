@@ -6,9 +6,18 @@ import { useAuthStore } from "../../hooks/useAuthStore";
 const Login = () => {
   const { login } = useAuthStore((state: any) => state);
 
-  const onLogin = async (values: any) => {
-    const { email, password } = values;
-    login({ email, password });
+  const onLogin = async (values: { email: string; password: string }) => {
+    try {
+      const { email, password } = values;
+      await login({ email, password });
+      // Login successful
+      console.log("Login successful");
+      // Additional actions or redirection after successful login
+    } catch (error) {
+      // Login failed
+      console.error("Login failed:", error);
+      // Handle the error or display an error message to the user
+    }
   };
 
   return (

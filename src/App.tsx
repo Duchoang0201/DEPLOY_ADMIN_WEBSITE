@@ -24,7 +24,6 @@ import SearchOrdersByStatus from "./pages/Order/SearchOrdersByStatus";
 import EmployeesCRUD from "./pages/Management/EmployeesCRUD";
 import SlidesCRUD from "./pages/Management/SlideCRUD";
 import FeaturesCRUD from "./pages/Management/FeaturesCRUD";
-import axios from "axios";
 import { useBreadcrumb } from "./hooks/useBreadcrumb";
 numeral.locale("vi");
 const { Header, Sider, Content } = Layout;
@@ -51,7 +50,9 @@ const App: React.FC = () => {
     };
   }, []); // Empty dependency array ensures that the effect runs only once
 
-  const { auth } = useAuthStore((state: any) => state);
+  const { auth, dataFromToken, setLogout } = useAuthStore(
+    (state: any) => state
+  );
   const [user, setUser] = useState<any>();
 
   useEffect(() => {
@@ -72,14 +73,27 @@ const App: React.FC = () => {
     }
   }, [auth]);
 
-  useEffect(() => {
-    if (auth) {
-      axios.get(`${URL_ENV}/employees/${auth.payload._id}`).then((res) => {
-        setUser(res.data.result);
-      });
-    }
-  }, [URL_ENV, auth]);
+  // useEffect(() => {
+  //   if (auth?.payload) {
+  //     axios.get(`${URL_ENV}/employees/${auth.payload._id}`).then((res) => {
+  //       setUser(res.data.result);
+  //     });
+  //   } else {
+  //     freshToken(auth?.refreshToken);
+  //   }
+  // }, [URL_ENV, auth, dataFromToken, freshToken]);
 
+  useEffect(() => {
+    dataFromToken(auth?.token);
+    if (auth?.payload) setUser(auth?.payload);
+
+    const refreshToken = setTimeout(() => {
+      setLogout();
+    }, 2 * 3000);
+    // return () => {
+    //   clearTimeout(refreshToken);
+    // };
+  }, [auth?.token]);
   // Function reresh to clear local storage
 
   const [collapsed, setCollapsed] = useState(false);
@@ -91,7 +105,7 @@ const App: React.FC = () => {
     <>
       <div>
         <BrowserRouter>
-          {!auth && (
+          {!auth?.payload && (
             <Content style={{ padding: 24 }}>
               <Routes>
                 <Route path="/" element={<Login />} />
@@ -100,7 +114,7 @@ const App: React.FC = () => {
               </Routes>
             </Content>
           )}
-          {auth && (
+          {auth?.payload && (
             <Layout>
               <Sider
                 collapsedWidth={windowWidth <= 768 ? 0 : undefined}
@@ -188,7 +202,7 @@ const App: React.FC = () => {
 
                     {/* MANAGEMENT */}
 
-                    {auth.payload.isAdmin && (
+                    {auth.payload?.isAdmin && (
                       <Route
                         path="/management/employees"
                         element={<EmployeesCRUD />}

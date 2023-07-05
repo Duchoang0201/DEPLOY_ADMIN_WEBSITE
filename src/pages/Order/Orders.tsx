@@ -12,11 +12,18 @@ import {
   Space,
   Popconfirm,
   message,
+  Pagination,
+  Input,
 } from "antd";
 import numeral from "numeral";
 import axios from "axios";
 import { axiosClient } from "../../libraries/axiosClient";
-import { RestOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  RestOutlined,
+  SearchOutlined,
+  SendOutlined,
+} from "@ant-design/icons";
 
 export default function Orders() {
   const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
@@ -24,8 +31,10 @@ export default function Orders() {
 
   const [refresh, setRefresh] = useState(0);
   const [addProductsModalVisible, setAddProductsModalVisible] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
-
+  const [selectedOrder, setSelectedOrder] = useState<any>();
+  const [componentDisabled, setComponentDisabled] = useState<boolean>(true);
+  const [shippingAddressDisabled, setShippingAddressDisabled] =
+    useState<boolean>(true);
   const handleDelete = async (record: any, index: any) => {
     const currentProduct = record;
     const response = await axiosClient.get("orders/" + selectedOrder._id);
@@ -34,13 +43,24 @@ export default function Orders() {
     const remainOrderDetails = orderDetails.filter((x: any) => {
       return x.productId.toString() !== currentProduct.productId.toString();
     });
-    console.log("remainOrderDetails", remainOrderDetails);
     await axiosClient.patch("orders/" + selectedOrder._id, {
       orderDetails: remainOrderDetails,
     });
     setRefresh((f) => f + 1);
+    message.success(
+      `Delete product: ${record.product.name} successfully!!!`,
+      1.5
+    );
   };
 
+  //Seach Order by Id
+  const [orderId, setOrderId] = useState("");
+
+  const onSearchOrderId = useMemo(() => {
+    return (record: any) => {
+      setOrderId(record);
+    };
+  }, []);
   //SEARCH CUSTOMER
   const [customerId, setCustomerId] = useState("");
 
@@ -82,18 +102,45 @@ export default function Orders() {
     };
   }, []);
 
+  const [pages, setPages] = useState();
+  const [skip, setSkip] = useState(0);
+  // const [currentPage, setCurrentPage] = useState(1);
+  const slideCurrent = (value: any) => {
+    setSkip(value * 10 - 10);
+    // setCurrentPage(value);
+  };
+
   // Products
   const [products, setProducts] = useState<any>([]);
+  const [skipProducts, setSkipProducts] = useState(0);
+  // const [currentPageProducts, setCurrentPageProducts] = useState(1);
+  const [pageProducts, setPageProduts] = useState();
+  const slideCurrentProduct = (value: any) => {
+    setSkipProducts(value * 10 - 10);
+    // setCurrentPageProducts(value);
+  };
+  const queryParams = [skipProducts && `skip=${skipProducts}`]
+    .filter(Boolean)
+    .join("&");
+
+  let URL_FILTER_PRODUCTS = `${URL_ENV}/products?${queryParams}&limit=10`;
+  // CALL API FILTER PRODUCT DEPEND ON QUERY
   useEffect(() => {
-    axios.get(`${URL_ENV}/products`).then((response) => {
-      setProducts(response.data.results);
-    });
-  }, [URL_ENV, refresh]);
+    axios
+      .get(URL_FILTER_PRODUCTS)
+      .then((res) => {
+        setProducts(res.data.results);
+        setPageProduts(res.data.amountResults);
+      })
+      .catch((err) => console.log(err));
+  }, [refresh, URL_FILTER_PRODUCTS]);
 
   const URL_FILTER = `${API_URL}?${[
     customerId && `&customerId=${customerId}`,
     methodPay && `&methodPay=${methodPay}`,
     status && `&status=${status}`,
+    orderId && `&orderId=${orderId}`,
+    skip && `&skip=${skip}`,
   ]
     .filter(Boolean)
     .join("")}&limit=10`;
@@ -114,13 +161,14 @@ export default function Orders() {
   useEffect(() => {
     axios.get(URL_FILTER).then((response) => {
       setOrders(response.data.results);
+      setPages(response.data.amountResults);
     });
   }, [URL_FILTER, refresh]);
 
   useEffect(() => {
     // Check if the selected order exists in the updated dataResource
     const updatedSelectedOrder = orders.find(
-      (order: any) => order.id === selectedOrder?.id
+      (order: any) => order._id === selectedOrder?._id
     );
     setSelectedOrder(updatedSelectedOrder || null);
   }, [orders, selectedOrder]);
@@ -250,7 +298,9 @@ export default function Orders() {
         return (
           <>
             <div>
-              <Button onClick={handleDeleteClick}>Xóa</Button>
+              <Button danger type="dashed" onClick={handleDeleteClick}>
+                Delete
+              </Button>
             </div>
           </>
         );
@@ -261,14 +311,34 @@ export default function Orders() {
   // Orders
   const columns = [
     {
+      title: "Order Id",
+      dataIndex: "_id",
+      key: "_id",
+      render: (text: any, record: any) => {
+        return <strong>{record._id}</strong>;
+      },
+      filterDropdown: () => {
+        return (
+          <div style={{ padding: 8 }}>
+            <Input.Search
+              allowClear
+              placeholder="Enter Order Id"
+              onSearch={onSearchOrderId}
+              style={{ width: 200 }}
+            />
+          </div>
+        );
+      },
+    },
+    {
       title: "Khách hàng",
       dataIndex: "customer",
       key: "customer",
       render: (text: any, record: any) => {
         return (
-          <strong>
+          <>
             {record.customer?.firstName} {record.customer?.lastName}
-          </strong>
+          </>
         );
       },
       filterDropdown: () => {
@@ -294,7 +364,7 @@ export default function Orders() {
               allowClear
               showSearch
               style={{ width: "100%" }}
-              placeholder="Select a product"
+              placeholder="Select one"
               optionFilterProp="children"
               onChange={onSearchCustomerName}
               filterOption={(input: any, option: any) =>
@@ -309,8 +379,6 @@ export default function Orders() {
       },
     },
     {
-      width: "15%",
-
       title: "Hình thức thanh toán",
       dataIndex: "paymentType",
       key: "paymentType",
@@ -345,6 +413,8 @@ export default function Orders() {
       key: "status",
       render: (text: any, record: any) => {
         return text === "WAITING" ? (
+          <div className="">{text}</div>
+        ) : text === "ECONFIRMED" ? (
           <div className="text-primary">{text}</div>
         ) : text === "COMPLETED" ? (
           <div className="text-success">{text}</div>
@@ -369,6 +439,7 @@ export default function Orders() {
               }
               options={[
                 { label: "WAITING", value: "WAITING" },
+                { label: "ECONFIRMED", value: "ECONFIRMED" },
                 { label: "COMPLETED", value: "COMPLETED" },
                 { label: "CANCELED", value: "CANCELED" },
               ]}
@@ -421,15 +492,19 @@ export default function Orders() {
         );
       },
     },
+
+    //Function
     {
-      title: "",
-      key: "actions",
+      title: "Function",
+      dataIndex: "function",
+      key: "function",
       render: (text: any, record: any, index: any) => {
         return (
-          <Space className="text-end">
+          <Space>
             <Button
               onClick={() => {
                 setSelectedOrder(record);
+                setComponentDisabled(true);
               }}
               shape="circle"
               icon={<SearchOutlined />}
@@ -465,6 +540,29 @@ export default function Orders() {
             >
               <Button danger icon={<RestOutlined />}></Button>
             </Popconfirm>
+            {record.status === "WAITING" && (
+              <Popconfirm
+                okText="Confirm"
+                okType="danger"
+                title={"Are you sure to Confirm it?"}
+                onConfirm={async () => {
+                  const res = await axios.patch(
+                    `${URL_ENV}/orders/${record._id}`,
+                    {
+                      status: "ECONFIRMED",
+                    }
+                  );
+                  if (res?.data?._id) {
+                    message.success(`CONFIRM ORDER'S SUCESSFULLY`);
+                    setRefresh((f) => f + 1);
+                  } else {
+                    message.error(`SYSTEM ERROR !!!`);
+                  }
+                }}
+              >
+                <Button danger icon={<SendOutlined />}></Button>
+              </Popconfirm>
+            )}
           </Space>
         );
       },
@@ -531,11 +629,19 @@ export default function Orders() {
               </Card>
             );
           })}
+        <Pagination
+          className="py-4 container text-end "
+          onChange={(e) => slideCurrentProduct(e)}
+          defaultCurrent={1}
+          total={pageProducts}
+        />
       </Modal>
       <Row>
         <Col span={24}>
           {" "}
           <Table
+            bordered
+            pagination={false}
             scroll={{ x: "max-content", y: "max-content" }}
             rowKey="_id"
             dataSource={orders}
@@ -558,22 +664,134 @@ export default function Orders() {
                 <div>
                   {/* Description of order */}
                   <Descriptions bordered column={1}>
-                    <Descriptions.Item label="Trạng thái">
-                      {selectedOrder.status}
+                    <Descriptions.Item label="Status">
+                      <Space>
+                        <Space.Compact style={{ width: "100%" }}>
+                          <Select
+                            disabled={componentDisabled}
+                            allowClear
+                            showSearch
+                            value={selectedOrder.status}
+                            style={{ width: "100%" }}
+                            optionFilterProp="children"
+                            onChange={async (e) => {
+                              message.loading("Changing status !!", 1.5);
+                              const req = await axios.patch(
+                                `${URL_ENV}/orders/${selectedOrder._id}`,
+                                {
+                                  status: e,
+                                }
+                              );
+                              if (req.data) {
+                                const count = setTimeout(() => {
+                                  message.success(
+                                    `Change status to ${req.data.status} successfully!!`,
+                                    1.5
+                                  );
+                                  setRefresh((f) => f + 1);
+                                  setComponentDisabled(!componentDisabled);
+                                }, 2000);
+                              }
+                            }}
+                            filterOption={(input: any, option: any) =>
+                              (option?.label ?? "")
+                                .toLowerCase()
+                                .indexOf(input.toLowerCase()) >= 0
+                            }
+                            options={[
+                              { label: "WAITING", value: "WAITING" },
+                              { label: "ECONFIRMED", value: "ECONFIRMED" },
+                              { label: "COMPLETED", value: "COMPLETED" },
+                              { label: "CANCELED", value: "CANCELED" },
+                            ]}
+                          />
+                        </Space.Compact>
+
+                        <Button
+                          danger={!componentDisabled}
+                          type="dashed"
+                          icon={<EditOutlined />}
+                          onClick={() => {
+                            setComponentDisabled(!componentDisabled);
+                          }}
+                        />
+                      </Space>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Khách hàng">
-                      {selectedOrder.customer?.firstName}{" "}
-                      {selectedOrder.customer?.lastName}
+                    <Descriptions.Item label="Customer">
+                      <Space>
+                        <Space.Compact style={{ width: "100%" }}>
+                          <Input
+                            disabled={true}
+                            placeholder={`${selectedOrder.customer?.firstName}${selectedOrder.customer?.lastName}`}
+                          />
+                        </Space.Compact>
+                      </Space>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Nhân viên">
-                      {selectedOrder.employee?.firstName}{" "}
-                      {selectedOrder.employee?.lastName}
+                    <Descriptions.Item label="Employee">
+                      <Space>
+                        <Space.Compact style={{ width: "100%" }}>
+                          <Input
+                            disabled={true}
+                            placeholder={`${selectedOrder.employee?.firstName} ${selectedOrder.employee?.lastName}`}
+                          />
+                        </Space.Compact>
+                      </Space>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Shipping address">
+                      <Row gutter={10} className="py-2">
+                        <Col span={20}>
+                          <Input.Search
+                            disabled={shippingAddressDisabled}
+                            enterButton={<SendOutlined />}
+                            placeholder={selectedOrder?.shippingAddress}
+                            style={{ width: "100%" }}
+                            onSearch={async (e) => {
+                              message.loading(
+                                "Changing Shipping Address !!",
+                                1.5
+                              );
+                              const req = await axios.patch(
+                                `${URL_ENV}/orders/${selectedOrder._id}`,
+                                {
+                                  shippingAddress: e,
+                                }
+                              );
+                              if (req.data) {
+                                const count = setTimeout(() => {
+                                  message.success(
+                                    `Change Shipping address to ${req.data.status} successfully!!`,
+                                    1.5
+                                  );
+                                  setRefresh((f) => f + 1);
+                                  setShippingAddressDisabled(
+                                    !shippingAddressDisabled
+                                  );
+                                }, 2000);
+                              }
+                            }}
+                          />
+                        </Col>
+
+                        <Col span={4}>
+                          <Button
+                            danger={!shippingAddressDisabled}
+                            type="dashed"
+                            icon={<EditOutlined />}
+                            onClick={() => {
+                              setShippingAddressDisabled(
+                                !shippingAddressDisabled
+                              );
+                            }}
+                          />
+                        </Col>
+                      </Row>
                     </Descriptions.Item>
                   </Descriptions>
                   <Divider />
 
                   {/* Table include product of orderDetails */}
                   <Table
+                    bordered
                     scroll={{ x: 200 }}
                     rowKey="_id"
                     dataSource={selectedOrder.orderDetails}
@@ -593,6 +811,12 @@ export default function Orders() {
           </Col>
         </Modal>
       </Row>
+      <Pagination
+        className="container text-end"
+        onChange={(e) => slideCurrent(e)}
+        defaultCurrent={1}
+        total={pages}
+      />
     </div>
   );
 }
