@@ -323,7 +323,10 @@ const Information = (props: Props) => {
                             })
                             .catch((err) => {
                               console.log(err);
-                              message.error(`${err.response.data.message}`);
+                              setTimeout(() => {
+                                setRefresh((f) => f + 1);
+                                message.error(`${err.response.data.message}`);
+                              }, 2000);
                             });
                         }}
                       />
@@ -342,17 +345,17 @@ const Information = (props: Props) => {
                   </Row>
                 </Collapse.Panel>
                 <Collapse.Panel header="Password" key="6">
-                  {" "}
+                  Đổi mật khẩu{" "}
+                  <Button
+                    danger={!disabled}
+                    type="dashed"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setDisabled(!disabled);
+                    }}
+                  />{" "}
                   <div>
-                    Đổi mật khẩu{" "}
-                    <Button
-                      danger={!disabled}
-                      type="dashed"
-                      icon={<EditOutlined />}
-                      onClick={() => {
-                        setDisabled(!disabled);
-                      }}
-                    />{" "}
+                    Nhập mật khẩu cũ:
                     <Row gutter={10} className="py-2">
                       <Col span={20}>
                         <Space>
@@ -399,8 +402,8 @@ const Information = (props: Props) => {
                     </Row>
                   </div>
                   <div className="">
+                    Mật khẩu mới:
                     <Row gutter={10} className="py-2">
-                      Mật khẩu mới:
                       <Col span={20}>
                         <Space>
                           <Input.Password
