@@ -18,24 +18,23 @@ const Body = (props: Props) => {
 
   useEffect(() => {
     const data = {
-      room: conversationData.conversationId,
+      room: conversationData?.conversationId,
     };
     socket.current?.emit("client-message", data);
 
     socket.current?.on("direct-message", (data: any) => {
-      const { dataMessage } = data;
-      const newData = {
-        employee: dataMessage.employee,
-
-        conversationId: dataMessage.conversationId,
-        sender: dataMessage.sender,
-        text: dataMessage.text,
-        createdAt: dataMessage.createdAt,
-        updatedAt: dataMessage.updatedAt,
+      const { newData } = data;
+      const dataMessages = {
+        employee: newData?.employee,
+        conversationId: newData?.conversationId,
+        sender: newData?.sender,
+        text: newData?.text,
+        createdAt: newData?.createdAt,
+        updatedAt: newData?.updatedAt,
       };
-      setMessages([...messages, newData]);
+      setMessages([...messages, dataMessages]);
     });
-  }, [conversationData.conversationId, messages]);
+  }, [conversationData?.conversationId, messages]);
 
   useEffect(() => {
     ///get Messages
@@ -44,7 +43,6 @@ const Body = (props: Props) => {
         const res = await axiosClient.get(
           `/messages/${conversationData?.conversationId}`
         );
-        console.log("««««« res »»»»»", res);
         if (res.data) {
           setMessages(res.data.messages);
         }
@@ -54,7 +52,7 @@ const Body = (props: Props) => {
     };
 
     getMessages();
-  }, [conversationData.conversationId]);
+  }, [conversationData?.conversationId]);
 
   useEffect(() => {
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
