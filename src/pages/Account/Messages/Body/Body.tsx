@@ -14,7 +14,6 @@ const Body = (props: Props) => {
   const socket = useRef<any>();
   socket.current = io(API_URL);
 
-  console.log("««««« messages »»»»»", messages);
   //BODY JOIN ROOM:
   useEffect(() => {
     // Join Room
@@ -23,18 +22,23 @@ const Body = (props: Props) => {
     };
     socket.current?.emit("client-message", data);
 
-    // Event Listener for Direct Messages
     const handleDirectMessage = (data: any) => {
       const { newData } = data;
-      setMessages((prevMessages: any) => [...prevMessages, newData]);
+      setMessages((prevMessages: any) => {
+        if (prevMessages.some((message: any) => message._id === newData._id)) {
+          return prevMessages; // Message already exists, no need to update state
+        }
+        return [...prevMessages, newData]; // Append the new message
+      });
     };
+
     socket.current?.on("direct-message", handleDirectMessage);
 
-    // Cleanup: Unsubscribe from the event when the component unmounts
     return () => {
       socket.current?.off("direct-message", handleDirectMessage);
     };
   }, [conversationData?.conversationId]);
+
   useEffect(() => {
     ///get Messages
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,7 +49,10 @@ const Body = (props: Props) => {
           `/messages/${conversationData?.conversationId}`
         );
         if (res.data) {
-          setMessages(res.data.messages);
+          setMessages((prevMessages: any) => {
+            // Clear previous messages and set the new messages
+            return [...res.data.messages];
+          });
         }
       } catch (error) {
         console.log("Error:", error);
@@ -65,7 +72,7 @@ const Body = (props: Props) => {
         {messages.map((message: any, i: any) => (
           <MessageBox
             isLast={i === messages.length - 1}
-            key={`${message._id}-${i + 1}`}
+            key={i}
             data={message}
           />
         ))}
