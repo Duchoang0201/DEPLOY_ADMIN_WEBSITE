@@ -44,6 +44,7 @@ const Body = (props: Props) => {
         const res = await axiosClient.get(
           `/messages/${conversationData?.conversationId}`
         );
+        console.log("««««« res »»»»»", res);
         if (res.data) {
           setMessages(res.data.messages);
         }
@@ -57,7 +58,7 @@ const Body = (props: Props) => {
 
   useEffect(() => {
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, []);
 
   return (
     <div>
