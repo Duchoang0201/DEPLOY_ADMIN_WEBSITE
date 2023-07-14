@@ -14,6 +14,10 @@ const Body = (props: Props) => {
   const socket = useRef<any>();
   socket.current = io(API_URL);
 
+  const data = {
+    room: conversationData?.conversationId,
+  };
+  socket.current?.emit("client-message", data);
   //BODY JOIN ROOM:
 
   console.log(
@@ -21,11 +25,6 @@ const Body = (props: Props) => {
     conversationData?.conversationId
   );
   useEffect(() => {
-    const data = {
-      room: conversationData?.conversationId,
-    };
-    socket.current?.emit("client-message", data);
-
     socket.current?.on("direct-message", (data: any) => {
       const { newData } = data;
       const dataMessages = {
