@@ -27,12 +27,11 @@ const Body = (props: Props) => {
     socket.current?.on("direct-message", (data: any) => {
       const { newData } = data;
 
-      setMessages([...messages, newData]);
+      setMessages((prevMessages: any) => [...prevMessages, newData]);
       scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
     });
   }, [conversationData?.conversationId, messages]);
 
-  console.log("««««« messages »»»»»", messages);
   useEffect(() => {
     ///get Messages
     const getMessages = async () => {
