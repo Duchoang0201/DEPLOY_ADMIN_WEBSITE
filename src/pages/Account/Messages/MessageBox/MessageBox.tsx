@@ -1,16 +1,12 @@
-import { useRef } from "react";
 import clsx from "clsx";
 import { Avatar } from "antd";
 // import { format } from "date-fns";
 import { useAuthStore } from "../../../../hooks/useAuthStore";
 import { format } from "timeago.js";
 import { API_URL } from "../../../../constants/URLS";
-import { io } from "socket.io-client";
 
 const MessageBox: React.FC<any> = ({ isLast, data }) => {
   // const [imageModalOpen, setImageModalOpen] = useState(false);
-  const socket = useRef<any>();
-  socket.current = io(API_URL);
 
   const { auth } = useAuthStore((state: any) => state);
   const isOwn = data.sender === auth?.payload?._id;
@@ -25,11 +21,6 @@ const MessageBox: React.FC<any> = ({ isLast, data }) => {
     "whitespace-normal break-words" // Apply the Tailwind CSS classes to wrap the text
   );
 
-  //CONECT SOCKET.IO
-
-  socket.current?.on("direct-message", (data: any) => {
-    console.log("Received direct message:", data);
-  });
   return (
     <div className={container}>
       <div className={avatar}>

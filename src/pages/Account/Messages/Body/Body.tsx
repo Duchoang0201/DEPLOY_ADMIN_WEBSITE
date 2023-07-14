@@ -58,7 +58,7 @@ const Body = (props: Props) => {
 
   useEffect(() => {
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  }, [messages.length]);
 
   return (
     <div>
