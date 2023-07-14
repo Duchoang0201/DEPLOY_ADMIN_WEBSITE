@@ -14,26 +14,31 @@ const Body = (props: Props) => {
   const socket = useRef<any>();
   socket.current = io(API_URL);
 
+  console.log("««««« messages »»»»»", messages);
   //BODY JOIN ROOM:
-
   useEffect(() => {
-    scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
-
+    // Join Room
     const data = {
       room: conversationData?.conversationId,
     };
     socket.current?.emit("client-message", data);
 
-    socket.current?.on("direct-message", (data: any) => {
+    // Event Listener for Direct Messages
+    const handleDirectMessage = (data: any) => {
       const { newData } = data;
-
       setMessages((prevMessages: any) => [...prevMessages, newData]);
-      scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
-    });
-  }, [conversationData?.conversationId, messages]);
+    };
+    socket.current?.on("direct-message", handleDirectMessage);
 
+    // Cleanup: Unsubscribe from the event when the component unmounts
+    return () => {
+      socket.current?.off("direct-message", handleDirectMessage);
+    };
+  }, [conversationData?.conversationId]);
   useEffect(() => {
     ///get Messages
+    scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
+
     const getMessages = async () => {
       try {
         const res = await axiosClient.get(
@@ -50,9 +55,9 @@ const Body = (props: Props) => {
     getMessages();
   }, [conversationData?.conversationId]);
 
-  // useEffect(() => {
-  //   scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
-  // }, [messages.length]);
+  useEffect(() => {
+    scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
 
   return (
     <div>
