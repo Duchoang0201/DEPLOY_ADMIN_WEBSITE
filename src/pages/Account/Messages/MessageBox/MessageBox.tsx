@@ -53,7 +53,7 @@ const MessageBox: React.FC<any> = ({ isLast, data }) => {
         </div>
 
         <div className={message}>
-          <p className="text-clip overflow-hidden ...">{data.text}</p>
+          <p className="text-clip overflow-hidden ">{data.text}</p>
         </div>
       </div>
     </div>
