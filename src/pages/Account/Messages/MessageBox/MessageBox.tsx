@@ -19,9 +19,10 @@ const MessageBox: React.FC<any> = ({ isLast, data }) => {
   const avatar = clsx(isOwn && "order-2");
   const body = clsx("flex flex-col gap-2", isOwn && "items-end");
   const message = clsx(
-    "text-sm w-fit overflow-hidden rounded-full py-2 px-3",
-    isOwn ? "bg-sky-500 text-white" : "bg-gray-100"
-    // data?.employeeInfo?.imageUrl ? "rounded-md p-0" : "rounded-full py-2 px-3"
+    "text-sm  w-fit rounded-lg  py-2 px-3 max-w-xs",
+    isOwn ? "bg-sky-500 text-white" : "bg-gray-100",
+    // data?.employeeInfo?.imageUrl ? "rounded-md p-0" : "rounded-full py-2 px-3",
+    "whitespace-normal break-words" // Apply the Tailwind CSS classes to wrap the text
   );
 
   //CONECT SOCKET.IO
@@ -42,7 +43,7 @@ const MessageBox: React.FC<any> = ({ isLast, data }) => {
         />
       </div>
       <div className={body}>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1  ">
           <div className="text-sm text-gray-500">
             {data?.employeeInfor?.lastName}
           </div>
@@ -51,7 +52,9 @@ const MessageBox: React.FC<any> = ({ isLast, data }) => {
           </div>
         </div>
 
-        <div className={message}>{data.text}</div>
+        <div className={message}>
+          <p className="text-clip overflow-hidden ...">{data.text}</p>
+        </div>
       </div>
     </div>
   );
