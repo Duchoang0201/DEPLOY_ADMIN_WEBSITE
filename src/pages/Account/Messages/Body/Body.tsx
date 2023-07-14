@@ -54,7 +54,7 @@ const Body = (props: Props) => {
     };
 
     getMessages();
-  }, [conversationData]);
+  }, [conversationData.conversationId]);
 
   useEffect(() => {
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });

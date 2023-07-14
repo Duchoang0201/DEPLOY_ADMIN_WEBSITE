@@ -16,11 +16,11 @@ const UserList: React.FC<UserListProps> = ({ items }) => {
   const socket = useRef<any>();
   socket.current = io(API_URL);
 
-  useEffect(() => {
-    socket.current?.on("server-message", (data: any) => {
-      console.log("««««« data »»»»»", data);
-    });
-  }, []);
+  // useEffect(() => {
+  //   socket.current?.on("server-message", (data: any) => {
+  //     console.log("««««« data »»»»»", data);
+  //   });
+  // }, []);
   return (
     <aside className="lg:pb-0 lg:w-70 lg:block border-gray-200">
       <div className="">
