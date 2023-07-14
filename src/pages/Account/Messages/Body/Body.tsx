@@ -14,28 +14,25 @@ const Body = (props: Props) => {
   const socket = useRef<any>();
   socket.current = io(API_URL);
 
-  const data = {
-    room: conversationData?.conversationId,
-  };
-  socket.current?.emit("client-message", data);
   //BODY JOIN ROOM:
 
-  console.log("««««« messages »»»»»", messages);
   useEffect(() => {
+    scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
+
+    const data = {
+      room: conversationData?.conversationId,
+    };
+    socket.current?.emit("client-message", data);
+
     socket.current?.on("direct-message", (data: any) => {
       const { newData } = data;
-      const dataMessages = {
-        employee: newData?.employee,
-        conversationId: newData?.conversationId,
-        sender: newData?.sender,
-        text: newData?.text,
-        createdAt: newData?.createdAt,
-        updatedAt: newData?.updatedAt,
-      };
-      setMessages([...messages, dataMessages]);
+
+      setMessages([...messages, newData]);
+      scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
     });
   }, [conversationData?.conversationId, messages]);
 
+  console.log("««««« messages »»»»»", messages);
   useEffect(() => {
     ///get Messages
     const getMessages = async () => {
@@ -54,9 +51,9 @@ const Body = (props: Props) => {
     getMessages();
   }, [conversationData?.conversationId]);
 
-  useEffect(() => {
-    scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  // useEffect(() => {
+  //   scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
+  // }, [messages.length]);
 
   return (
     <div>
