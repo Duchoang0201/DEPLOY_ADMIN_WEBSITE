@@ -13,7 +13,7 @@ import {
 } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../../hooks/useAuthStore";
-import axios from "axios";
+import { axiosClient } from "../../libraries/axiosClient";
 import {
   CheckCircleTwoTone,
   PlusCircleOutlined,
@@ -21,8 +21,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 
-
-//Time stamp 
+//Time stamp
 import { format } from "timeago.js";
 // Socket;
 import { io } from "socket.io-client";
@@ -89,7 +88,7 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const res = await axios.get(`${URL_ENV}/employees`);
+        const res = await axiosClient.get(`/employees`);
         const dataIn = res.data.results.filter(
           (item: any) => item._id !== auth.payload._id
         );
@@ -104,9 +103,7 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getConversations = async () => {
       try {
-        const res = await axios.get(
-          `${URL_ENV}/conversations/${auth.payload._id}`
-        );
+        const res = await axiosClient.get(`/conversations/${auth.payload._id}`);
         setConversations(res.data);
         setLoading(true);
       } catch (err) {}
@@ -124,8 +121,8 @@ const Messages: React.FC<any> = () => {
         receiverId: `${e.userId}`,
       };
       try {
-        const res = await axios.post(
-          `${URL_ENV}/conversations`,
+        const res = await axiosClient.post(
+          `/conversations`,
           conversationCreate
         );
         if (res) {
@@ -159,7 +156,7 @@ const Messages: React.FC<any> = () => {
     });
 
     try {
-      const res = await axios.post(`${URL_ENV}/messages`, messageSend);
+      const res = await axiosClient.post(`/messages`, messageSend);
       setRefresh((f) => f + 1);
       setMessages([...messages, res.data]);
       createForm.resetFields();
@@ -177,8 +174,8 @@ const Messages: React.FC<any> = () => {
   useEffect(() => {
     const getMessages = async () => {
       try {
-        const res = await axios.get(
-          `${URL_ENV}/messages/${conversationInfor.conversationId}`
+        const res = await axiosClient.get(
+          `/messages/${conversationInfor.conversationId}`
         );
         setMessages(res.data);
       } catch (error) {}
@@ -219,8 +216,8 @@ const Messages: React.FC<any> = () => {
 
           //Sau khi có Id thì lấy toàn bộ thông tin của của friend, để lấy firstName, lastName hiển thị
           try {
-            const response = await axios.get(
-              `${URL_ENV}/employees/${otherMembers}`
+            const response = await axiosClient.get(
+              `/employees/${otherMembers}`
             );
             const friendData = response.data.result;
             const friendInfo = {

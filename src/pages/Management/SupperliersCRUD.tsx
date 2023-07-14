@@ -69,12 +69,6 @@ function SupperliersCRUD() {
 
   const [loadingTable, setLoadingTable] = useState(true);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setLoadingTable(false);
-    }, 1000); // 5000 milliseconds = 5 seconds
-  }, []);
-
   //Text of Tyography:
 
   //Create data
@@ -232,6 +226,7 @@ function SupperliersCRUD() {
       .then((res) => {
         setSupplierTEST(res.data.results);
         setPages(res.data.amountResults);
+        setLoadingTable(false);
       })
       .catch((err) => console.log(err));
   }, [URL_FILTER, refresh]);

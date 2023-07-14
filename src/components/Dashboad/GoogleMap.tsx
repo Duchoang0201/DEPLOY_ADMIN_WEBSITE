@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import GoogleMapReact from "google-map-react";
-import axios from "axios";
 import { Divider } from "antd";
+import { axiosClient } from "../../libraries/axiosClient";
 
 const Address = () => {
   const [positions, setPositions] = useState<any[]>([]);
@@ -10,7 +10,7 @@ const Address = () => {
   useEffect(() => {
     const fetchLocation = async () => {
       try {
-        const response = await axios.get(`${URL_ENV}/orders`);
+        const response = await axiosClient.get(`/orders`);
         const fetchedPositions = response?.data?.results?.map(
           (item: any, index: any) => ({
             name: item.position.name,

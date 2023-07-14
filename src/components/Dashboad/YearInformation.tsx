@@ -8,6 +8,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import { axiosClient } from "../../libraries/axiosClient";
 type Props = {};
 const YearInformation = (props: Props) => {
   const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
@@ -25,14 +26,17 @@ const YearInformation = (props: Props) => {
     axios.get(`${URL_ENV}/customers`).then((res) => {
       setTotalUser(res.data.amountResults);
     });
-    axios.get(`${URL_ENV}/orders`).then((res) => {
-      setListOrders(res.data);
-    });
+
     axios.get(`${URL_ENV}/products?active=true`).then((res) => {
       setProductsActive(res.data.amountResults);
     });
   }, [URL_ENV]);
 
+  useEffect(() => {
+    axiosClient.get(`/orders`).then((res: any) => {
+      setListOrders(res.data.amountResults);
+    });
+  }, []);
   return (
     <div>
       {" "}
@@ -74,7 +78,7 @@ const YearInformation = (props: Props) => {
                 <Space>
                   <Statistic
                     title="Order's total"
-                    value={listOrders?.amountResults}
+                    value={listOrders}
                     formatter={formatter}
                     style={{ fontWeight: "bold" }}
                   />{" "}

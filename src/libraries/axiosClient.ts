@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../constants/URLS';
+import { message } from 'antd';
 
 const axiosClient = axios.create({
   baseURL: API_URL,
@@ -52,13 +53,14 @@ axiosClient.interceptors.response.use(
         // Trường hợp không có token thì chuyển sang trang LOGIN
         const token = window.localStorage.getItem('token');
         if (!token) {
-          window.location.href = '/login';
+          window.location.href = '/';
           return Promise.reject(error);
         }
 
+        message.info("System reload", 1.5)
         const refreshToken = window.localStorage.getItem('refreshToken');
         if (refreshToken) {
-          const response = await axiosClient.post('/auth/refresh-token', {
+          const response = await axiosClient.post('/employees/refreshToken', {
             refreshToken: refreshToken,
           });
 
@@ -67,8 +69,9 @@ axiosClient.interceptors.response.use(
 
           originalConfig.headers = {
             ...originalConfig.headers,
-            authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           };
+
 
           return axiosClient(originalConfig);
         } else {

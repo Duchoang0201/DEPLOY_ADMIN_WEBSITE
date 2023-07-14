@@ -83,15 +83,12 @@ function ProductsCRUD() {
   const [loadingTable, setLoadingTable] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setLoadingTable(false);
-    }, 1000); // 5000 milliseconds = 5 seconds
-
     //CATEGORY
     axios
       .get(`${URL_ENV}/categories`)
       .then((res) => {
         setCategories(res.data.results);
+        setLoadingTable(false);
       })
       .catch((err) => console.log(err));
     ///SUPPLIER

@@ -13,8 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../hooks/useAuthStore";
 import { useBreadcrumb } from "../hooks/useBreadcrumb";
 
-const MainMenu = () => {
-  const { auth } = useAuthStore((state: any) => state);
+const MainMenu = ({ user }: any) => {
   const { addBread } = useBreadcrumb((state: any) => state);
   const items = [
     {
@@ -52,7 +51,7 @@ const MainMenu = () => {
           label: "Products",
         },
 
-        auth?.payload?.isAdmin && {
+        user?.isAdmin && {
           key: "management/employees",
           label: "Employees",
         },

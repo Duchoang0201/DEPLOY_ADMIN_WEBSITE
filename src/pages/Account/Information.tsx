@@ -13,7 +13,6 @@ import {
   Upload,
   message,
 } from "antd";
-import axios from "axios";
 import {
   EditOutlined,
   HomeOutlined,
@@ -23,7 +22,7 @@ import {
   UploadOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../../hooks/useAuthStore";
-
+import { axiosClient } from "../../libraries/axiosClient";
 type Props = {};
 const { Text } = Typography;
 const Information = (props: Props) => {
@@ -47,16 +46,25 @@ const Information = (props: Props) => {
     setLoading(false);
   }, 1000);
 
-  const E_URL = `${URL_ENV}/employees/${auth?.payload._id}`;
+  const E_URL = `/employees/personal`;
+  const token = window.localStorage.getItem("token");
 
   useEffect(() => {
-    axios
-      .get(E_URL)
-      .then((res) => {
-        setUser(res.data.result);
-      })
-      .catch((err) => console.log(err));
-  }, [E_URL, refresh]);
+    if (token) {
+      axiosClient
+        .get(`${E_URL}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((res) => {
+          setUser(res?.data.result);
+        })
+        .catch((err) => {
+          console.log("««««« err »»»»»", err);
+        });
+    }
+  }, [E_URL, refresh, token]);
 
   return (
     <>
@@ -77,7 +85,7 @@ const Information = (props: Props) => {
                 <Upload
                   showUploadList={false}
                   name="file"
-                  action={`${URL_ENV}/upload/employees/${auth?.payload._id}/image`}
+                  action={`${URL_ENV}/upload/employees/${user?._id}/image`}
                   headers={{ authorization: "authorization-text" }}
                   onChange={(info) => {
                     if (info.file.status !== "uploading") {
@@ -133,15 +141,15 @@ const Information = (props: Props) => {
                       <Input.Search
                         disabled={disabled}
                         enterButton={<SendOutlined />}
-                        placeholder={auth?.payload?.firstName}
+                        placeholder={user?.firstName}
                         style={{ width: "100%" }}
                         onSearch={async (e) => {
-                          axios
-                            .patch(`${URL_ENV}/employees/${auth.payload._id}`, {
+                          axiosClient
+                            .patch(`/employees/${user?._id}`, {
                               firstName: e,
                             })
                             .then((res) => {
-                              const count = setTimeout(() => {
+                              setTimeout(() => {
                                 message.success(
                                   `Change fisrt name to ${res.data.firstName} successfully!!`,
                                   1.5
@@ -174,15 +182,15 @@ const Information = (props: Props) => {
                       <Input.Search
                         disabled={disabled}
                         enterButton={<SendOutlined />}
-                        placeholder={auth?.payload?.lastName}
+                        placeholder={user?.lastName}
                         style={{ width: "100%" }}
                         onSearch={async (e) => {
-                          axios
-                            .patch(`${URL_ENV}/employees/${auth.payload._id}`, {
+                          axiosClient
+                            .patch(`/employees/${user?._id}`, {
                               lastName: e,
                             })
                             .then((res) => {
-                              const count = setTimeout(() => {
+                              setTimeout(() => {
                                 message.success(
                                   `Change last name to ${res.data.lastName} successfully!!`,
                                   1.5
@@ -215,15 +223,15 @@ const Information = (props: Props) => {
                       <Input.Search
                         disabled={disabled}
                         enterButton={<SendOutlined />}
-                        placeholder={auth?.payload?.address}
+                        placeholder={user?.address}
                         style={{ width: "100%" }}
                         onSearch={async (e) => {
-                          axios
-                            .patch(`${URL_ENV}/employees/${auth.payload._id}`, {
+                          axiosClient
+                            .patch(`/employees/${user?._id}`, {
                               address: e,
                             })
                             .then((res) => {
-                              const count = setTimeout(() => {
+                              setTimeout(() => {
                                 message.success(
                                   `Change address to ${res.data.address} successfully!!`,
                                   1.5
@@ -256,18 +264,18 @@ const Information = (props: Props) => {
                       <Input.Search
                         disabled={disabled}
                         enterButton={<SendOutlined />}
-                        placeholder={auth?.payload?.phoneNumber}
+                        placeholder={user?.phoneNumber}
                         style={{ width: "100%" }}
                         onSearch={async (e) => {
-                          axios
-                            .patch(`${URL_ENV}/employees/${auth.payload._id}`, {
+                          axiosClient
+                            .patch(`/employees/${user?._id}`, {
                               phoneNumber: e,
                             })
                             .then((res) => {
                               message.loading("Changing Phone Number !!", 1.5);
 
                               console.log("««««« res »»»»»", res);
-                              const count = setTimeout(() => {
+                              setTimeout(() => {
                                 message.success(
                                   `Change Phone Number to ${res.data.result.phoneNumber} successfully!!`,
                                   1.5
@@ -302,17 +310,17 @@ const Information = (props: Props) => {
                       <Input.Search
                         disabled={disabled}
                         enterButton={<SendOutlined />}
-                        placeholder={auth?.payload?.email}
+                        placeholder={user?.email}
                         style={{ width: "100%" }}
                         onSearch={async (e) => {
-                          axios
-                            .patch(`${URL_ENV}/employees/${auth.payload._id}`, {
+                          axiosClient
+                            .patch(`/employees/${user?._id}`, {
                               email: e,
                             })
                             .then((res) => {
                               message.loading("Changing Email !!", 1.5);
 
-                              const count = setTimeout(() => {
+                              setTimeout(() => {
                                 message.success(
                                   `Change email to ${res.data.result.email} successfully!!`,
                                   1.5
@@ -369,8 +377,8 @@ const Information = (props: Props) => {
                           <Button
                             disabled={disabled}
                             onClick={async (e) => {
-                              axios
-                                .post(`${URL_ENV}/employees/login`, {
+                              axiosClient
+                                .post(`/employees/login`, {
                                   email: auth.payload.email,
                                   password: oldPassWord,
                                 })
@@ -382,7 +390,7 @@ const Information = (props: Props) => {
                                     );
                                     setOldPassWord("");
 
-                                    const count = setTimeout(() => {
+                                    setTimeout(() => {
                                       setDisabled(!disabled);
                                       setDisabledNewPassword(false);
                                     }, 2000);
@@ -418,17 +426,14 @@ const Information = (props: Props) => {
                           <Button
                             disabled={disabledNewPassword}
                             onClick={async (e: any) => {
-                              axios
-                                .patch(
-                                  `${URL_ENV}/employees/${auth.payload._id}`,
-                                  {
-                                    password: newPassword,
-                                  }
-                                )
+                              axiosClient
+                                .patch(`/employees/${user?._id}`, {
+                                  password: newPassword,
+                                })
                                 .then((res) => {
                                   message.loading("Changing Password !!", 1.5);
 
-                                  const count = setTimeout(() => {
+                                  setTimeout(() => {
                                     message.success(
                                       `Change Password  successfully!!`,
                                       1.5

@@ -24,6 +24,7 @@ import {
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
 import axios from "axios";
+import { axiosClient } from "../../libraries/axiosClient";
 import React, { useCallback, useEffect, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
@@ -82,11 +83,8 @@ function EmployeeCRUD() {
 
   const [loadingTable, setLoadingTable] = useState(true);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setLoadingTable(false);
-    }, 1000); // 5000 milliseconds = 5 seconds
-  }, []);
+  ///GET TOKEM FORM LOCALSTORAGE
+  const token = window.localStorage.getItem("token");
 
   //Create data
   const handleCreate = (record: any) => {
@@ -100,8 +98,16 @@ function EmployeeCRUD() {
       record.Locked = false;
     }
 
-    axios
-      .post(API_URL, record)
+    axiosClient
+      .post(
+        API_URL,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+        record
+      )
       .then((res) => {
         // UPLOAD FILE
         const { _id } = res.data.result;
@@ -144,8 +150,12 @@ function EmployeeCRUD() {
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    axios
-      .delete(API_URL + "/" + record._id)
+    axiosClient
+      .delete(API_URL + "/" + record._id, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         message.success(" Delete item sucessfully!!", 1.5);
         setRefresh((f) => f + 1);
@@ -156,6 +166,7 @@ function EmployeeCRUD() {
   };
   //Update a Data
   const handleUpdate = (record: any) => {
+    message.loading("Updating, please wait!!", 3);
     record.updatedBy = {
       employeeId: auth.payload._id,
       firstName: auth.payload.firstName,
@@ -167,7 +178,7 @@ function EmployeeCRUD() {
     if (record.isAdmin === undefined) {
       record.isAdmin = false;
     }
-    axios
+    axiosClient
       .patch(API_URL + "/" + updateId._id, record)
       .then((res) => {
         console.log(res);
@@ -185,7 +196,6 @@ function EmployeeCRUD() {
 
   const [isLocked, setIsLocked] = useState("");
   const onSearchIsLocked = useCallback((value: any) => {
-    console.log("««««« value »»»»»", value);
     if (value) {
       setIsLocked(value);
     } else {
@@ -291,14 +301,19 @@ function EmployeeCRUD() {
     .join("")}&limit=10`;
 
   useEffect(() => {
-    axios
-      .get(URL_FILTER)
+    axiosClient
+      .get(URL_FILTER, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         setEmployeesTEST(res.data.results);
         setPages(res.data.amountResults);
+        setLoadingTable(false);
       })
       .catch((err) => console.log(err));
-  }, [URL_FILTER, refresh]);
+  }, [URL_FILTER, refresh, token]);
 
   //Setting column
   const columns = [

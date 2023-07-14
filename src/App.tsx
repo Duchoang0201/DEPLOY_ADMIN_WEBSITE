@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Login from "./pages/Auth/Login";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { useAuthStore } from "./hooks/useAuthStore";
-import { Layout, Button, theme, Divider } from "antd";
+import { Layout, Button, theme, Divider, message } from "antd";
 import { io } from "socket.io-client";
 
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
@@ -18,22 +17,48 @@ import CustomerCRUD from "./pages/Management/CustomerCRUD";
 import SupperliersCRUD from "./pages/Management/SupperliersCRUD";
 import Information from "./pages/Account/Information";
 
-import Messages from "./pages/Account/Messages";
 import Orders from "./pages/Order/Orders";
 import SearchOrdersByStatus from "./pages/Order/SearchOrdersByStatus";
 import EmployeesCRUD from "./pages/Management/EmployeesCRUD";
 import SlidesCRUD from "./pages/Management/SlideCRUD";
 import FeaturesCRUD from "./pages/Management/FeaturesCRUD";
 import { useBreadcrumb } from "./hooks/useBreadcrumb";
+import { axiosClient } from "./libraries/axiosClient";
+import { useAuthStore } from "./hooks/useAuthStore";
+import MessagesDev from "./pages/Account/Messages/MessagesDev";
 numeral.locale("vi");
 const { Header, Sider, Content } = Layout;
+const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
 const App: React.FC = () => {
-  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+  const socket = useRef<any>();
 
   const { breadCrumb } = useBreadcrumb((state: any) => state);
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  const [user, setUser] = useState<any>();
+
+  const { setAuth } = useAuthStore((state: any) => state);
+  let token = window.localStorage.getItem("token");
+
+  useEffect(() => {
+    document.title = "Management Website";
+
+    if (token) {
+      axiosClient
+        .get(`/employees/login/profile`)
+        .then((res) => {
+          setUser(res?.data);
+          setAuth(res?.data);
+        })
+        .catch((err) => {
+          console.log("««««« err »»»»»", err);
+        });
+    } else {
+      message.info("Please login!!", 1.5);
+    }
+  }, [setAuth, token]);
 
   useEffect(() => {
     // Update windowWidth when the window is resized
@@ -50,50 +75,20 @@ const App: React.FC = () => {
     };
   }, []); // Empty dependency array ensures that the effect runs only once
 
-  const { auth, dataFromToken, setLogout } = useAuthStore(
-    (state: any) => state
-  );
-  const [user, setUser] = useState<any>();
+  /// USER ONLINE_OFFLINE
 
   useEffect(() => {
-    document.title = "Management Website";
-  }, []);
-  // /// USER ONLINE_OFFLINE
-  const socket = useRef<any>();
-
-  useEffect(() => {
-    if (auth) {
+    if (user) {
       socket.current = io(URL_ENV);
     }
-  }, [URL_ENV, auth]);
+  }, [user]);
 
   useEffect(() => {
-    if (auth) {
-      socket.current.emit("addUser", auth?.payload?._id);
+    if (user) {
+      socket.current.emit("addUser", user?.payload?._id);
     }
-  }, [auth]);
+  }, [user]);
 
-  // useEffect(() => {
-  //   if (auth?.payload) {
-  //     axios.get(`${URL_ENV}/employees/${auth.payload._id}`).then((res) => {
-  //       setUser(res.data.result);
-  //     });
-  //   } else {
-  //     freshToken(auth?.refreshToken);
-  //   }
-  // }, [URL_ENV, auth, dataFromToken, freshToken]);
-
-  useEffect(() => {
-    dataFromToken(auth?.token);
-    if (auth?.payload) setUser(auth?.payload);
-
-    const refreshToken = setTimeout(() => {
-      setLogout();
-    }, 2 * 3000);
-    // return () => {
-    //   clearTimeout(refreshToken);
-    // };
-  }, [auth?.token]);
   // Function reresh to clear local storage
 
   const [collapsed, setCollapsed] = useState(false);
@@ -105,7 +100,7 @@ const App: React.FC = () => {
     <>
       <div>
         <BrowserRouter>
-          {!auth?.payload && (
+          {!user?._id && (
             <Content style={{ padding: 24 }}>
               <Routes>
                 <Route path="/" element={<Login />} />
@@ -114,7 +109,7 @@ const App: React.FC = () => {
               </Routes>
             </Content>
           )}
-          {auth?.payload && (
+          {user?._id && (
             <Layout>
               <Sider
                 collapsedWidth={windowWidth <= 768 ? 0 : undefined}
@@ -138,7 +133,7 @@ const App: React.FC = () => {
                     background: "rgba(255, 255, 255, 0.2)",
                   }}
                 />
-                <MainMenu />
+                <MainMenu user={user} />
               </Sider>
 
               <Layout
@@ -202,7 +197,7 @@ const App: React.FC = () => {
 
                     {/* MANAGEMENT */}
 
-                    {auth.payload?.isAdmin && (
+                    {user.isAdmin && (
                       <Route
                         path="/management/employees"
                         element={<EmployeesCRUD />}
@@ -242,18 +237,9 @@ const App: React.FC = () => {
                     />
                     <Route
                       path="/account/message"
-                      element={<Messages collapsed={collapsed} />}
+                      element={<MessagesDev collapsed={collapsed} />}
                     />
 
-                    {/* SALES */}
-                    {/* <Route path='/sales/products/discount' element={<DiscountPage />} />
-                  <Route path='/sales/products/stock' element={<StockPage />} /> */}
-
-                    {/* UPLOAD */}
-
-                    {/* <Route path='/upload/form' element={<FormUpload />} />
-                  <Route path='/upload/antd' element={<AntUpload />} /> */}
-                    {/* NO MATCH ROUTE */}
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Content>

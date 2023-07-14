@@ -24,7 +24,7 @@ import {
   Upload,
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
-import axios from "axios";
+import { axiosClient } from "../../libraries/axiosClient";
 import { useEffect, useMemo, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
@@ -40,7 +40,7 @@ function CategoryCRUD() {
   // Date Picker Setting
 
   // API OF
-  let API_URL = `${URL_ENV}/categories`;
+  let API_URL = `/categories`;
 
   // MODAL:
   // Modal open Create:
@@ -71,12 +71,6 @@ function CategoryCRUD() {
 
   const [loadingTable, setLoadingTable] = useState(true);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setLoadingTable(false);
-    }, 1000); // 5000 milliseconds = 5 seconds
-  }, []);
-
   //Text of Tyography:
 
   //Create data
@@ -91,7 +85,7 @@ function CategoryCRUD() {
       record.active = false;
     }
 
-    axios
+    axiosClient
       .post(API_URL, record)
       .then((res) => {
         // UPLOAD FILE
@@ -101,7 +95,7 @@ function CategoryCRUD() {
 
         if (file?.uid && file?.type) {
           message.loading("On Updating picture on data!!", 1.5);
-          axios
+          axiosClient
             .post(`${URL_ENV}/upload/categories/${_id}/image`, formData)
             .then((respose) => {
               message.success("Created Successfully!!", 1.5);
@@ -132,7 +126,7 @@ function CategoryCRUD() {
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    axios
+    axiosClient
       .delete(API_URL + "/" + record._id)
       .then((res) => {
         message.success(" Delete item sucessfully!!", 1.5);
@@ -156,7 +150,7 @@ function CategoryCRUD() {
     if (record.isDeleted === undefined) {
       record.isDeleted = false;
     }
-    axios
+    axiosClient
       .patch(API_URL + "/" + updateId, record)
       .then((res) => {
         setOpen(false);
@@ -242,11 +236,12 @@ function CategoryCRUD() {
     .join("")}&limit=10`;
 
   useEffect(() => {
-    axios
+    axiosClient
       .get(URL_FILTER)
       .then((res) => {
         setCategoryTEST(res.data.results);
         setPages(res.data.amountResults);
+        setLoadingTable(false);
       })
       .catch((err) => console.log(err));
   }, [URL_FILTER, refresh]);

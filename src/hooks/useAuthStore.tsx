@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist, createJSONStorage } from "zustand/middleware";
-import axios from "axios";
 import { message } from "antd";
+
+import { axiosClient } from "../libraries/axiosClient";
+
 interface isLogin {
   email: string;
   password: string;
@@ -14,25 +16,23 @@ export const useAuthStore = create(
     persist(
       (set: any, get: any) => {
         let loginData: any = null; // Variable to store the login data
-        const URL_ENV =
-          process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
         return {
           auth: null,
           login: async ({ email, password }: isLogin) => {
             try {
-              const response = await axios.post(`${URL_ENV}/employees/login`, {
+              const found = await axiosClient.post("/employees/login", {
                 email: email,
                 password: password,
               });
-              if (response.data.token) {
-                loginData = response.data; // Store the response data
+              if (found.data.token) {
+                loginData = found.data; // Store the found data
 
-                set({ auth: response.data }, false, {
+                set({ auth: found.data }, false, {
                   type: "auth/login-success",
                 });
 
-                // await get().dataFromToken({ token: response.data.token });
+                // await get().dataFromToken({ token: found.data.token });
               } else {
                 message.error("Login unsuccessfully!!");
               }
@@ -42,75 +42,76 @@ export const useAuthStore = create(
               throw message.error("Account's not found", 1.5);
             }
           },
-          dataFromToken: async (token: any) => {
-            try {
-              const auth: any = get().auth;
-
-              if (auth?.token && auth?.refreshToken) {
-                const response: any = await axios.get(
-                  `${URL_ENV}/employees/login/profile`,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${auth?.token}`,
-                    },
-                  }
-                );
-                const user = response.data;
-
-                if (user._id) {
-                  //lastActivity
-
-                  await axios.patch(`${URL_ENV}/employees/${user._id}`, {
-                    lastActivity: new Date(),
-                  });
-                  set({ auth: { ...auth, payload: user } }, false, {
-                    type: "auth/login-success",
-                  });
-                }
-              }
-            } catch (error: any) {
-              console.error("An error occurred:", error);
-              if (error?.response?.data?.oke === false) {
-                const auth: any = get().auth;
-
-                const newToken = await axios.post(
-                  `${URL_ENV}/employees/refreshToken`,
-                  {
-                    id: auth.userId,
-                    refreshToken: auth?.refreshToken,
-                  }
-                );
-                auth.token = newToken.data.accessToken;
-                message.success("Logging in successfully!!!", 1.5);
-
-                set({ auth: { ...auth } }, false, {
-                  type: "auth/login-success",
-                });
-              }
-              // Handle error
-            }
-          },
-
-          // freshToken: async (token: any) => {
-          //   const auth: any = get().auth;
-
-          //   const newToken = await axios.post(
-          //     `${URL_ENV}/employees/refreshToken`,
-          //     {
-          //       token: auth?.refreshToken,
-          //     }
-          //   );
-          //   auth.token = newToken.data.accessToken;
-          //   message.success("Loging sucessfully !!!", 1.5);
-
-          //   set({ auth: { ...auth } }, false, {
-          //     type: "auth/login-success",
-          //   });
+          // dataFromToken: async (token: any) => {
           //   try {
-          //   } catch (err) {
-          //     console.log("««««« err »»»»»", err);
+          //     const auth: any = get().auth;
+
+          //     if (auth?.token && auth?.refreshToken) {
+          //       const response: any = await axios.get(
+          //         `${URL_ENV}/employees/login/profile`,
+          //         {
+          //           headers: {
+          //             Authorization: `Bearer ${auth?.token}`,
+          //           },
+          //         }
+          //       );
+          //       const user = response.data;
+
+          //       if (user._id) {
+          //         //lastActivity
+
+          //         await axios.patch(`${URL_ENV}/employees/${user._id}`, {
+          //           lastActivity: new Date(),
+          //         });
+          //         set({ auth: { ...auth, payload: user } }, false, {
+          //           type: "auth/login-success",
+          //         });
+          //       }
+          //     }
+          //   } catch (error: any) {
+          //     console.error("An error occurred:", error);
+          //     if (error?.response?.data?.oke === false) {
+          //       const auth: any = get().auth;
+
+          //       const newToken = await axios.post(
+          //         `${URL_ENV}/employees/refreshToken`,
+          //         {
+          //           id: auth.userId,
+          //           refreshToken: auth?.refreshToken,
+          //         }
+          //       );
+          //       auth.token = newToken.data.accessToken;
+          //       message.success("Logging in successfully!!!", 1.5);
+
+          //       set({ auth: { ...auth } }, false, {
+          //         type: "auth/login-success",
+          //       });
+          //     }
+          //     // Handle error
           //   }
           // },
+          getDataByAxios: async () => {
+            const auth: any = get().auth;
+
+            const token = window.localStorage.getItem("token");
+
+            await axiosClient.get(`/employees/login/profile`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            set({ auth: { ...auth } }, false, {
+              type: "auth/login-success",
+            });
+          },
+          setAuth: async (data: any) => {
+            const auth: any = get().auth;
+
+            set({ auth: { ...auth, payload: data } }, false, {
+              type: "auth/setData",
+            });
+          },
           setLogout: async () => {
             const auth: any = get().auth;
             const dataFromToken = get().dataFromToken;
@@ -121,7 +122,6 @@ export const useAuthStore = create(
                   auth: {
                     token: auth?.token,
                     refreshToken: auth?.refreshToken,
-                    userId: auth?.userId,
                   },
                 },
                 false,
@@ -135,14 +135,13 @@ export const useAuthStore = create(
           },
           logout: async () => {
             // Use the loginData in the logout function
-
             if (loginData && loginData.payload && loginData.payload._id) {
-              axios.patch(`${URL_ENV}/employees/${loginData.payload._id}`, {
+              axiosClient.patch(`/employees/${loginData.payload._id}`, {
                 lastActivity: new Date(),
               });
             }
             localStorage.clear();
-
+            window.location.href = "/";
             return set({ auth: null }, false, { type: "auth/logout-success" });
           },
         };

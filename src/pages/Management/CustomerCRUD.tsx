@@ -81,12 +81,6 @@ function CustomerCRUD() {
 
   const [loadingTable, setLoadingTable] = useState(true);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setLoadingTable(false);
-    }, 1000); // 5000 milliseconds = 5 seconds
-  }, []);
-
   //Create data
   const handleCreate = (record: any) => {
     record.createdBy = {
@@ -293,6 +287,7 @@ function CustomerCRUD() {
       .then((res) => {
         setCustomersTEST(res.data.results);
         setPages(res.data.amountResults);
+        setLoadingTable(false);
       })
       .catch((err) => console.log(err));
   }, [URL_FILTER, refresh]);
