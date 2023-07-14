@@ -20,10 +20,7 @@ const Body = (props: Props) => {
   socket.current?.emit("client-message", data);
   //BODY JOIN ROOM:
 
-  console.log(
-    "««««« conversationData?.conversationId »»»»»",
-    conversationData?.conversationId
-  );
+  console.log("««««« messages »»»»»", messages);
   useEffect(() => {
     socket.current?.on("direct-message", (data: any) => {
       const { newData } = data;
