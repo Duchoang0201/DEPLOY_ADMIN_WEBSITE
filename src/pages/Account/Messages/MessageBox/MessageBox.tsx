@@ -4,6 +4,7 @@ import { Avatar } from "antd";
 import { useAuthStore } from "../../../../hooks/useAuthStore";
 import { format } from "timeago.js";
 import { API_URL } from "../../../../constants/URLS";
+import { UserOutlined } from "@ant-design/icons";
 
 const MessageBox: React.FC<any> = ({ isLast, data }) => {
   // const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -26,11 +27,12 @@ const MessageBox: React.FC<any> = ({ isLast, data }) => {
       <div className={avatar}>
         <Avatar
           size={40}
-          src={
-            isOwn
-              ? API_URL + auth?.payload?.imageUrl
-              : API_URL + data?.employee?.imageUrl
-          }
+          // src={
+          //   isOwn
+          //     ? API_URL + auth?.payload?.imageUrl
+          //     : API_URL + data?.employee?.imageUrl
+          // }
+          icon={<UserOutlined />}
         />
       </div>
       <div className={body}>
