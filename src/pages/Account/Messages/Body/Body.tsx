@@ -16,6 +16,10 @@ const Body = (props: Props) => {
 
   //BODY JOIN ROOM:
 
+  console.log(
+    "««««« conversationData?.conversationId »»»»»",
+    conversationData?.conversationId
+  );
   useEffect(() => {
     const data = {
       room: conversationData?.conversationId,
