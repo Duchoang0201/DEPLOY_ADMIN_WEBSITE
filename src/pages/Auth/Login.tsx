@@ -8,7 +8,6 @@ const Login = () => {
 
   const onLogin = async (values: any) => {
     const { email, password } = values;
-    message.loading("Access to system, please wait!!", 2);
     await login({ email, password });
   };
 
@@ -62,7 +61,7 @@ const Login = () => {
           </Form.Item>
 
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-            <Button type="primary" htmlType="submit">
+            <Button type="dashed" htmlType="submit">
               Submit
             </Button>
           </Form.Item>

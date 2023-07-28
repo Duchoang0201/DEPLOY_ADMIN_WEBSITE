@@ -96,7 +96,7 @@ const Information = (props: Props) => {
               >
                 <Button
                   style={{ width: "30px", right: "-4px" }}
-                  type="primary"
+                  type="dashed"
                   htmlType="submit"
                   icon={<EditFilled />}
                   onClick={() => {
@@ -121,7 +121,7 @@ const Information = (props: Props) => {
               >
                 <Button
                   style={{ width: "30px", right: "-4px" }}
-                  type="primary"
+                  type="dashed"
                   htmlType="submit"
                   icon={<EditFilled />}
                   onClick={() => {
@@ -146,7 +146,7 @@ const Information = (props: Props) => {
               >
                 <Button
                   style={{ width: "30px", right: "-4px" }}
-                  type="primary"
+                  type="dashed"
                   htmlType="submit"
                   icon={<EditFilled />}
                   onClick={() => {
@@ -171,7 +171,7 @@ const Information = (props: Props) => {
               >
                 <Button
                   style={{ width: "30px", right: "-4px" }}
-                  type="primary"
+                  type="dashed"
                   htmlType="submit"
                   icon={<EditFilled />}
                   onClick={() => {
@@ -196,7 +196,7 @@ const Information = (props: Props) => {
               >
                 <Button
                   style={{ width: "30px", right: "-4px" }}
-                  type="primary"
+                  type="dashed"
                   htmlType="submit"
                   icon={<EditFilled />}
                   onClick={() => {

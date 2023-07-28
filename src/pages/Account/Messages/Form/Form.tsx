@@ -33,8 +33,8 @@ const Form = () => {
       },
       type: "chat",
       text: message,
-      sender: auth?.payload._id,
-      conversationId: conversationData.conversationId,
+      sender: auth?.payload?._id,
+      conversationId: conversationData?.conversationId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });

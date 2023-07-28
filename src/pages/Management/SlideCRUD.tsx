@@ -24,17 +24,18 @@ import {
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
 import axios from "axios";
-import React, { useCallback, useEffect, useState } from "react";
+import { API_URL } from "../../constants/URLS";
+import React, { useCallback, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
 // Date Picker
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import moment from "moment";
+import { useQuery } from "@tanstack/react-query";
+import { axiosClient } from "../../libraries/axiosClient";
 moment().format();
 function SlidesCRUD() {
-  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
-
   //Set File avatar
 
   const [file, setFile] = useState<any>(null);
@@ -48,7 +49,7 @@ function SlidesCRUD() {
   dayjs.extend(customParseFormat);
 
   // API OF COLLECTIOn
-  let API_URL = `${URL_ENV}/slides`;
+  let WEB_URL = `/slides`;
 
   // MODAL:
   // Modal open Create:
@@ -62,9 +63,6 @@ function SlidesCRUD() {
 
   //For fillter:
 
-  //Data fillter
-  const [slidesTEST, setSlidesTEST] = useState<any>([]);
-
   // Change fillter (f=> f+1)
 
   const [updateId, setUpdateId] = useState(0);
@@ -72,18 +70,6 @@ function SlidesCRUD() {
   //Create, Update Form setting
   const [createForm] = Form.useForm();
   const [updateForm] = Form.useForm();
-
-  //Text of Tyography:
-
-  //TableLoading
-
-  const [loadingTable, setLoadingTable] = useState(true);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setLoadingTable(false);
-    }, 1000); // 5000 milliseconds = 5 seconds
-  }, []);
 
   //Create data
   const handleCreate = (record: any) => {
@@ -98,7 +84,7 @@ function SlidesCRUD() {
     }
 
     axios
-      .post(API_URL, record)
+      .post(WEB_URL, record)
       .then((res) => {
         // UPLOAD FILE
         const { _id } = res.data.result;
@@ -107,7 +93,7 @@ function SlidesCRUD() {
         formData.append("file", file);
 
         axios
-          .post(`${URL_ENV}/upload/slides/${_id}/image`, formData)
+          .post(`${API_URL}/upload/slides/${_id}/image`, formData)
           .then((respose) => {
             message.success("Thêm mới thành công!");
             createForm.resetFields();
@@ -126,7 +112,7 @@ function SlidesCRUD() {
   //Delete a Data
   const handleDelete = (record: any) => {
     axios
-      .delete(API_URL + "/" + record._id)
+      .delete(WEB_URL + "/" + record._id)
       .then((res) => {
         message.success(" Delete item sucessfully!!", 1.5);
         setRefresh((f) => f + 1);
@@ -145,7 +131,7 @@ function SlidesCRUD() {
     record.updatedDate = new Date().toISOString();
 
     axios
-      .patch(API_URL + "/" + updateId, record)
+      .patch(WEB_URL + "/" + updateId, record)
       .then((res) => {
         setOpen(false);
         setOpenCreate(false);
@@ -203,7 +189,6 @@ function SlidesCRUD() {
 
   //Search on Skip and Limit
 
-  const [pages, setPages] = useState();
   const [skip, setSkip] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const slideCurrent = (value: any) => {
@@ -211,7 +196,7 @@ function SlidesCRUD() {
     setCurrentPage(value);
   };
   //GET DATA ON FILLTER
-  const URL_FILTER = `${API_URL}?${[
+  const URL_FILTER = `${WEB_URL}?${[
     slideTitle && `&title=${slideTitle}`,
     slideSummary && `&summary=${slideSummary}`,
     slideUrl && `&url=${slideUrl}`,
@@ -221,15 +206,12 @@ function SlidesCRUD() {
     .filter(Boolean)
     .join("")}&limit=10`;
 
-  useEffect(() => {
-    axios
-      .get(URL_FILTER)
-      .then((res) => {
-        setSlidesTEST(res.data.results);
-        setPages(res.data.amountResults);
-      })
-      .catch((err) => console.log(err));
-  }, [URL_FILTER, refresh]);
+  const { data: slidesData, isLoading } = useQuery({
+    queryKey: ["getSlides", URL_FILTER],
+    queryFn: () => {
+      return axiosClient.get(URL_FILTER);
+    },
+  });
 
   //Setting column
   const columns = [
@@ -316,7 +298,7 @@ function SlidesCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={`${URL_ENV}${record.imageUrl}`}
+                src={`${API_URL}${record.imageUrl}`}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -448,7 +430,7 @@ function SlidesCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`${URL_ENV}/upload/slides/${record._id}/image`}
+            action={`${API_URL}/upload/slides/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -646,10 +628,10 @@ function SlidesCRUD() {
       <div>
         <Table
           // loading={!slidesTEST ? true : false}
-          loading={loadingTable}
+          loading={isLoading}
           rowKey="_id"
           columns={columns}
-          dataSource={slidesTEST}
+          dataSource={slidesData?.data?.results}
           pagination={false}
           scroll={{ x: "max-content", y: 610 }}
           rowClassName={(record) => {
@@ -662,7 +644,7 @@ function SlidesCRUD() {
           className="container text-end"
           onChange={(e) => slideCurrent(e)}
           defaultCurrent={1}
-          total={pages}
+          total={slidesData?.data?.amountResults}
         />
       </div>
 

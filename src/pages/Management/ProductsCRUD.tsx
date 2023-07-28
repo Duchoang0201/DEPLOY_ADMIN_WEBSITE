@@ -27,9 +27,13 @@ import {
   Upload,
 } from "antd";
 import axios from "axios";
+import { API_URL } from "../../constants/URLS";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
+import { useQuery } from "@tanstack/react-query";
+import { axiosClient } from "../../libraries/axiosClient";
 
 interface ISupplier {
   name: string;
@@ -44,12 +48,10 @@ function ProductsCRUD() {
   const [refresh, setRefresh] = useState(0);
   const { auth } = useAuthStore((state: any) => state);
   const [openDetailPicture, setOpenDetailPicture] = useState(false);
-  const [categories, setCategories] = useState<any>([]);
-  const [suppliers, setSuppliers] = useState([]);
 
   const [file, setFile] = useState<any>();
 
-  let API_URL = `${URL_ENV}/products`;
+  let WEB_URL = `/products`;
 
   // MODAL:
   // Modal open Create:
@@ -63,11 +65,8 @@ function ProductsCRUD() {
 
   //For fillter:
 
-  //Data fillter
-  const [productsTEST, setProductsTEST] = useState<Array<any>>([]);
-
   // Change fillter (f=> f+1)
-  // const [supplierFilter, setSupplierFilter] = useState(API_URL);
+  // const [supplierFilter, setSupplierFilter] = useState(WEB_URL);
 
   const [updateId, setUpdateId] = useState<any>();
 
@@ -80,26 +79,22 @@ function ProductsCRUD() {
 
   //TableLoading
 
-  const [loadingTable, setLoadingTable] = useState(true);
+  //GET CATEGORIES
+  const { data: categoriesData } = useQuery({
+    queryKey: ["getCategories"],
+    queryFn: () => {
+      return axiosClient.get("/categories");
+    },
+  });
 
-  useEffect(() => {
-    //CATEGORY
-    axios
-      .get(`${URL_ENV}/categories`)
-      .then((res) => {
-        setCategories(res.data.results);
-        setLoadingTable(false);
-      })
-      .catch((err) => console.log(err));
-    ///SUPPLIER
-    axios
-      .get(`${URL_ENV}/suppliers`)
-      .then((res) => {
-        setSuppliers(res.data.results);
-      })
-      .catch((err) => console.log(err));
-  }, [URL_ENV]);
+  //GET CATEGORIES
 
+  const { data: suppliersData } = useQuery({
+    queryKey: ["getSuppliers"],
+    queryFn: () => {
+      return axiosClient.get("/suppliers");
+    },
+  });
   //Text of Tyography:
 
   //Handle Create a Data
@@ -114,8 +109,8 @@ function ProductsCRUD() {
       record.active = false;
     }
     record.isDeleted = false;
-    axios
-      .post(API_URL, record)
+    axiosClient
+      .post(WEB_URL, record)
       .then((res) => {
         // UPLOAD FILE
         if (file) {
@@ -125,11 +120,12 @@ function ProductsCRUD() {
           formData.append("file", file);
 
           axios
-            .post(`${URL_ENV}/upload/products/${_id}/image`, formData)
+            .post(`${API_URL}/upload/products/${_id}/image`, formData)
             .then((respose) => {
               message.success("Create a product successFully!!", 1.5);
               createForm.resetFields();
-              setRefresh((f) => f + 1);
+              // setRefresh((f) => f + 1);
+              refetch();
               setOpen(false);
               setFile(null);
             })
@@ -148,17 +144,18 @@ function ProductsCRUD() {
   //handle Delete Data
   const handleDelete = useCallback(
     (record: any) => {
-      axios
-        .delete(API_URL + "/" + record._id)
+      axiosClient
+        .delete(WEB_URL + "/" + record._id)
         .then((res) => {
-          setRefresh((f) => f + 1);
+          // setRefresh((f) => f + 1);
+          refetch();
           message.success("Delete a product successFully!!", 3);
         })
         .catch((err) => {
           console.log(err);
         });
     },
-    [API_URL]
+    [WEB_URL]
   );
 
   //Update a data
@@ -175,10 +172,11 @@ function ProductsCRUD() {
     if (record.isDeleted === undefined) {
       record.isDeleted = false;
     }
-    axios
-      .patch(API_URL + "/" + updateId._id, record)
+    axiosClient
+      .patch(WEB_URL + "/" + updateId._id, record)
       .then((res) => {
-        setRefresh((f) => f + 1);
+        // setRefresh((f) => f + 1);
+        refetch();
         message.success(`Update product ${record.name} successFully!!`, 3);
         setOpen(false);
       })
@@ -188,16 +186,6 @@ function ProductsCRUD() {
   };
 
   //SEARCH ISDELETE ITEM
-
-  // KEEP UPDATE ID:
-
-  useEffect(() => {
-    // Check if the selected order exists in the updated dataResource
-    const updatedSelectedOrder = productsTEST.find(
-      (product: any) => product._id === updateId?._id
-    );
-    setUpdateId(updatedSelectedOrder || null);
-  }, [productsTEST, updateId]);
 
   //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
 
@@ -292,7 +280,6 @@ function ProductsCRUD() {
   }, []);
   //Search on Skip and Limit
 
-  const [pages, setPages] = useState();
   const [skip, setSkip] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const slideCurrent = (value: any) => {
@@ -337,18 +324,28 @@ function ProductsCRUD() {
     .filter(Boolean)
     .join("&");
 
-  let URL_FILTER = `${URL_ENV}/products?${queryParams}&limit=10`;
-  // CALL API FILTER PRODUCT DEPEND ON QUERY
-  useEffect(() => {
-    axios
-      .get(URL_FILTER)
-      .then((res) => {
-        setProductsTEST(res.data.results);
-        setPages(res.data.amountResults);
-      })
-      .catch((err) => console.log(err));
-  }, [refresh, URL_FILTER]);
+  const URL_FILTER = `/products?${queryParams}&limit=10`;
 
+  const {
+    data: productsData,
+    refetch,
+    isLoading,
+  } = useQuery({
+    queryKey: ["getProducts", URL_FILTER],
+    queryFn: () => {
+      return axiosClient.get(URL_FILTER);
+    },
+  });
+
+  // KEEP UPDATE ID:
+
+  useEffect(() => {
+    // Check if the selected order exists in the updated dataResource
+    const updatedSelectedOrder = productsData?.data?.results.find(
+      (product: any) => product._id === updateId?._id
+    );
+    setUpdateId(updatedSelectedOrder || null);
+  }, [productsData?.data?.results, updateId]);
   const columns = [
     //No
     {
@@ -453,6 +450,7 @@ function ProductsCRUD() {
                 alt="record.imageUrl"
               />
               <Button
+                className="border-none"
                 onClick={() => {
                   setUpdateId(record);
                   setOpenDetailPicture(true);
@@ -498,10 +496,12 @@ function ProductsCRUD() {
                   .toLowerCase()
                   .indexOf(input.toLowerCase()) >= 0
               }
-              options={categories.map((item: any, index: any) => ({
-                label: item.name,
-                value: item._id,
-              }))}
+              options={categoriesData?.data?.results?.map(
+                (item: any, index: any) => ({
+                  label: item.name,
+                  value: item._id,
+                })
+              )}
             />
           </div>
         );
@@ -538,12 +538,12 @@ function ProductsCRUD() {
                 optionFilterProp="children"
                 onChange={onSearchSupplier}
                 showSearch
-                filterOption={(input, option) =>
+                filterOption={(input: any, option: any) =>
                   (option?.label ?? "")
                     .toLowerCase()
-                    .includes(input.toLowerCase())
+                    .includes(input.toLowerCase()) >= 0
                 }
-                options={suppliers.map((item: any, index: any) => {
+                options={suppliersData?.data?.results?.map((item: any) => {
                   return {
                     label: `${item.name}`,
                     value: item._id,
@@ -636,7 +636,7 @@ function ProductsCRUD() {
                 <Form.Item>
                   <Button
                     style={{ width: "30px", right: "-10px" }}
-                    type="primary"
+                    type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
                   />
@@ -647,7 +647,7 @@ function ProductsCRUD() {
                   <Form.Item>
                     <Button
                       style={{ width: "30px", right: "-8px" }}
-                      type="primary"
+                      type="dashed"
                       onClick={() => {
                         // setFromPrice("");
                         // setToPrice("");
@@ -706,7 +706,7 @@ function ProductsCRUD() {
                 <Form.Item>
                   <Button
                     style={{ width: "30px", right: "-4px" }}
-                    type="primary"
+                    type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
                   />
@@ -717,7 +717,7 @@ function ProductsCRUD() {
                   <Form.Item>
                     <Button
                       style={{ width: "30px", right: "-8px" }}
-                      type="primary"
+                      type="dashed"
                       onClick={() => {
                         setFromStock("");
                         setToStock("");
@@ -775,7 +775,7 @@ function ProductsCRUD() {
                 <Form.Item>
                   <Button
                     style={{ width: "30px", right: "-10px" }}
-                    type="primary"
+                    type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
                   />
@@ -786,7 +786,7 @@ function ProductsCRUD() {
                   <Form.Item>
                     <Button
                       style={{ width: "30px", right: "-8px" }}
-                      type="primary"
+                      type="dashed"
                       onClick={() => {
                         setFromDiscount("");
                         setToDiscount("");
@@ -896,6 +896,7 @@ function ProductsCRUD() {
     <>
       {/* Modal Create A product */}
       <Modal
+        okType="dashed"
         title={`Create Product `}
         open={openCreate}
         onCancel={() => {
@@ -940,12 +941,14 @@ function ProductsCRUD() {
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
-              options={categories.map((item: any, index: any) => {
-                return {
-                  label: `${item.name}`,
-                  value: item._id,
-                };
-              })}
+              options={categoriesData?.data?.results?.map(
+                (item: any, index: any) => {
+                  return {
+                    label: `${item.name}`,
+                    value: item._id,
+                  };
+                }
+              )}
             />
           </Form.Item>{" "}
           <Form.Item
@@ -975,12 +978,14 @@ function ProductsCRUD() {
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
-              options={suppliers.map((item: any, index: any) => {
-                return {
-                  label: `${item.name}`,
-                  value: item._id,
-                };
-              })}
+              options={suppliersData?.data?.results?.map(
+                (item: any, index: any) => {
+                  return {
+                    label: `${item.name}`,
+                    value: item._id,
+                  };
+                }
+              )}
             />
           </Form.Item>
           <Form.Item
@@ -1143,11 +1148,11 @@ function ProductsCRUD() {
       </Modal>
       {/* List and function Product */}
       <Table
-        loading={loadingTable}
+        loading={isLoading}
         tableLayout="auto"
         rowKey="id"
         columns={columns}
-        dataSource={productsTEST}
+        dataSource={productsData?.data?.results}
         pagination={false}
         scroll={{ x: "max-content", y: 600 }}
         rowClassName={(record) => {
@@ -1166,6 +1171,7 @@ function ProductsCRUD() {
 
       {/* Modal Update */}
       <Modal
+        okType="dashed"
         title={`Update Product:  `}
         open={open}
         onCancel={() => {
@@ -1208,12 +1214,14 @@ function ProductsCRUD() {
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
-              options={categories.map((item: any, index: any) => {
-                return {
-                  label: `${item.name}`,
-                  value: item._id,
-                };
-              })}
+              options={categoriesData?.data?.results?.map(
+                (item: any, index: any) => {
+                  return {
+                    label: `${item.name}`,
+                    value: item._id,
+                  };
+                }
+              )}
             />
           </Form.Item>{" "}
           <Form.Item
@@ -1242,12 +1250,14 @@ function ProductsCRUD() {
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
-              options={suppliers.map((item: any, index: any) => {
-                return {
-                  label: `${item.name}`,
-                  value: item._id,
-                };
-              })}
+              options={suppliersData?.data?.results?.map(
+                (item: any, index: any) => {
+                  return {
+                    label: `${item.name}`,
+                    value: item._id,
+                  };
+                }
+              )}
             />
           </Form.Item>
           <Form.Item
@@ -1489,7 +1499,7 @@ function ProductsCRUD() {
                       (item: any) => `${URL_ENV}${item}` !== record.file.url
                     );
                     axios
-                      .patch(API_URL + "/" + updateId._id, {
+                      .patch(URL_ENV + "/" + updateId._id, {
                         images: newlistPicture,
                       })
                       .then((res) => {
@@ -1522,7 +1532,7 @@ function ProductsCRUD() {
         className="py-4 container text-end "
         onChange={(e) => slideCurrent(e)}
         defaultCurrent={1}
-        total={pages}
+        total={productsData?.data?.amountResults}
       />
     </>
   );

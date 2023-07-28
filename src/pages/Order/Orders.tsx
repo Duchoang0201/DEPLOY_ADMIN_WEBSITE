@@ -16,7 +16,6 @@ import {
   Input,
 } from "antd";
 import numeral from "numeral";
-import axios from "axios";
 import { axiosClient } from "../../libraries/axiosClient";
 import {
   EditOutlined,
@@ -24,10 +23,10 @@ import {
   SearchOutlined,
   SendOutlined,
 } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Orders() {
   let API_URL = `/orders`;
-  let token = window.localStorage.getItem("token");
 
   const [refresh, setRefresh] = useState(0);
   const [addProductsModalVisible, setAddProductsModalVisible] = useState(false);
@@ -35,8 +34,6 @@ export default function Orders() {
   const [componentDisabled, setComponentDisabled] = useState<boolean>(true);
   const [shippingAddressDisabled, setShippingAddressDisabled] =
     useState<boolean>(true);
-
-  const [loading, setLoading] = useState(true);
 
   const handleDelete = async (record: any, index: any) => {
     const currentProduct = record;
@@ -105,7 +102,6 @@ export default function Orders() {
     };
   }, []);
 
-  const [pages, setPages] = useState();
   const [skip, setSkip] = useState(0);
   // const [currentPage, setCurrentPage] = useState(1);
   const slideCurrent = (value: any) => {
@@ -120,7 +116,6 @@ export default function Orders() {
   const [pageProducts, setPageProduts] = useState();
   const slideCurrentProduct = (value: any) => {
     setSkipProducts(value * 10 - 10);
-    // setCurrentPageProducts(value);
   };
   const queryParams = [skipProducts && `skip=${skipProducts}`]
     .filter(Boolean)
@@ -148,40 +143,32 @@ export default function Orders() {
     .filter(Boolean)
     .join("")}&limit=10`;
 
-  //GET ORDER
-  const [orders, setOrders] = useState<any>([]);
-
   const listCustomerRef = useRef<any>(null);
-
-  if (orders.length > 0 && !listCustomerRef.current) {
-    listCustomerRef.current = orders;
-  }
 
   const listCustomer = listCustomerRef.current;
 
-  // Create an array of merged items
+  const {
+    data: ordersData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["getOrders", URL_FILTER],
+    queryFn: () => {
+      return axiosClient.get(URL_FILTER);
+    },
+  });
 
-  useEffect(() => {
-    axiosClient
-      .get(URL_FILTER, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        setOrders(response.data.results);
-        setPages(response.data.amountResults);
-        setLoading(false);
-      });
-  }, [URL_FILTER, refresh, token]);
+  if (ordersData?.data?.results?.length > 0 && !listCustomerRef.current) {
+    listCustomerRef.current = ordersData?.data?.results;
+  }
 
   useEffect(() => {
     // Check if the selected order exists in the updated dataResource
-    const updatedSelectedOrder = orders.find(
+    const updatedSelectedOrder = ordersData?.data?.results?.find(
       (order: any) => order._id === selectedOrder?._id
     );
     setSelectedOrder(updatedSelectedOrder || null);
-  }, [orders, selectedOrder]);
+  }, [ordersData?.data?.results, selectedOrder]);
 
   /// ORDERDETAILS
   const productColumns = [
@@ -216,7 +203,8 @@ export default function Orders() {
               await axiosClient.patch("orders/" + selectedOrder._id, {
                 orderDetails,
               });
-              setRefresh((f) => f + 1);
+              // setRefresh((f) => f + 1);
+              refetch();
               message.success("Plus a product sucessfully!!", 1.5);
             }}
           >
@@ -245,7 +233,8 @@ export default function Orders() {
                 await axiosClient.patch("orders/" + selectedOrder._id, {
                   orderDetails,
                 });
-                setRefresh((f) => f + 1);
+                // setRefresh((f) => f + 1);
+                refetch();
                 message.success(
                   "Remove a product out of order sucessfully!!",
                   1.5
@@ -255,7 +244,9 @@ export default function Orders() {
                 await axiosClient.patch("orders/" + selectedOrder._id, {
                   orderDetails,
                 });
-                setRefresh((f) => f + 1);
+                // setRefresh((f) => f + 1);
+                refetch();
+
                 message.success("Minus a product sucessfully!!", 1.5);
               }
             }}
@@ -531,11 +522,13 @@ export default function Orders() {
                 );
 
                 if (handleCanceled?.data?._id) {
-                  await axios
+                  await axiosClient
                     .post(`/products/orderm/${record._id}/stock`)
                     .then((response) => {
                       setTimeout(() => {
-                        setRefresh((f) => f + 1);
+                        // setRefresh((f) => f + 1);
+                        refetch();
+
                         message.success("Hủy đơn hàng thành công !!", 1.5);
                       }, 2000);
                     })
@@ -561,7 +554,8 @@ export default function Orders() {
                   });
                   if (res?.data?._id) {
                     message.success(`CONFIRM ORDER'S SUCESSFULLY`);
-                    setRefresh((f) => f + 1);
+                    // setRefresh((f) => f + 1);
+                    refetch();
                   } else {
                     message.error(`SYSTEM ERROR !!!`);
                   }
@@ -592,6 +586,7 @@ export default function Orders() {
         onOk={() => {
           setAddProductsModalVisible(false);
         }}
+        okType="dashed"
       >
         {products &&
           products.map((p: any) => {
@@ -621,7 +616,9 @@ export default function Orders() {
                     await axiosClient.patch("orders/" + selectedOrder._id, {
                       orderDetails,
                     });
-                    setRefresh((f) => f + 1);
+                    // setRefresh((f) => f + 1);
+                    refetch();
+
                     message.success(
                       `Add product: "${p.name}"  into order sucessfully!!`,
                       1.5
@@ -647,12 +644,12 @@ export default function Orders() {
         <Col span={24}>
           {" "}
           <Table
-            loading={loading}
+            loading={isLoading}
             bordered
             pagination={false}
             scroll={{ x: "max-content", y: "max-content" }}
             rowKey="_id"
-            dataSource={orders}
+            dataSource={ordersData?.data?.results}
             columns={columns}
           />
         </Col>
@@ -664,6 +661,7 @@ export default function Orders() {
           onOk={() => {
             setSelectedOrder(null);
           }}
+          okType="dashed"
           open={selectedOrder}
         >
           <Col>
@@ -696,7 +694,9 @@ export default function Orders() {
                                     `Change status to ${req.data.status} successfully!!`,
                                     1.5
                                   );
-                                  setRefresh((f) => f + 1);
+                                  // setRefresh((f) => f + 1);
+                                  refetch();
+
                                   setComponentDisabled(!componentDisabled);
                                 }, 2000);
                               }
@@ -770,7 +770,9 @@ export default function Orders() {
                                     `Change Shipping address to ${req.data.status} successfully!!`,
                                     1.5
                                   );
-                                  setRefresh((f) => f + 1);
+                                  // setRefresh((f) => f + 1);
+                                  refetch();
+
                                   setShippingAddressDisabled(
                                     !shippingAddressDisabled
                                   );
@@ -823,7 +825,7 @@ export default function Orders() {
         className="container text-end"
         onChange={(e) => slideCurrent(e)}
         defaultCurrent={1}
-        total={pages}
+        total={ordersData?.data?.amountResults}
       />
     </div>
   );

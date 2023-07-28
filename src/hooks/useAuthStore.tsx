@@ -26,6 +26,7 @@ export const useAuthStore = create(
                 password: password,
               });
               if (found.data.token) {
+                message.success("Login sucesfully!!");
                 loginData = found.data; // Store the found data
 
                 set({ auth: found.data }, false, {
@@ -34,6 +35,7 @@ export const useAuthStore = create(
 
                 // await get().dataFromToken({ token: found.data.token });
               } else {
+                console.log(`⚠️⚠️⚠️!! error `);
                 message.error("Login unsuccessfully!!");
               }
             } catch (err: any) {

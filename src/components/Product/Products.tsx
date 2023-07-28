@@ -447,7 +447,7 @@ const ProductsCRUD = () => {
                 <Form.Item>
                   <Button
                     style={{ width: "30px", right: "-10px" }}
-                    type="primary"
+                    type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
                   />
@@ -458,7 +458,7 @@ const ProductsCRUD = () => {
                   <Form.Item>
                     <Button
                       style={{ width: "30px", right: "-8px" }}
-                      type="primary"
+                      type="dashed"
                       onClick={() => {
                         // setFromPrice("");
                         // setToPrice("");
@@ -517,7 +517,7 @@ const ProductsCRUD = () => {
                 <Form.Item>
                   <Button
                     style={{ width: "30px", right: "-4px" }}
-                    type="primary"
+                    type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
                   />
@@ -528,7 +528,7 @@ const ProductsCRUD = () => {
                   <Form.Item>
                     <Button
                       style={{ width: "30px", right: "-8px" }}
-                      type="primary"
+                      type="dashed"
                       onClick={() => {
                         setFromStock("");
                         setToStock("");
@@ -586,7 +586,7 @@ const ProductsCRUD = () => {
                 <Form.Item>
                   <Button
                     style={{ width: "30px", right: "-10px" }}
-                    type="primary"
+                    type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
                   />
@@ -597,7 +597,7 @@ const ProductsCRUD = () => {
                   <Form.Item>
                     <Button
                       style={{ width: "30px", right: "-8px" }}
-                      type="primary"
+                      type="dashed"
                       onClick={() => {
                         setFromDiscount("");
                         setToDiscount("");

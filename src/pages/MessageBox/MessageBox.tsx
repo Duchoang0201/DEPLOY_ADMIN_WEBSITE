@@ -43,7 +43,7 @@ const MessageBox: React.FC = () => {
           </Form.Item>
           <Button
             style={{ width: "30px", right: "-4px" }}
-            type="primary"
+            type="dashed"
             htmlType="submit"
             icon={<EditFilled />}
           />
@@ -98,7 +98,7 @@ const MessageBox: React.FC = () => {
           <Button
             style={{ width: "40px", height: "40px" }}
             icon={<WechatOutlined />}
-            type="primary"
+            type="dashed"
             shape="circle"
           ></Button>
         </Popover>

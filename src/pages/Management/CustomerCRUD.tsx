@@ -23,24 +23,24 @@ import {
   Upload,
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
-import axios from "axios";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { API_URL } from "../../constants/URLS";
+import React, { useCallback, useMemo, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
 // Date Picker
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import moment from "moment";
-moment().format();
+import { axiosClient } from "../../libraries/axiosClient";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+
 function CustomerCRUD() {
   //Set File avatar
-  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
 
   const [file, setFile] = useState<any>(null);
 
   const { auth } = useAuthStore((state: any) => state);
-
-  const [refresh, setRefresh] = useState(0);
 
   // Date Picker Setting
 
@@ -50,7 +50,7 @@ function CustomerCRUD() {
   const dateFormat = "DD/MM/YYYY";
 
   // API OF COLLECTIOn
-  let API_URL = `${URL_ENV}/customers`;
+  let WEB_URL = `/customers`;
 
   // MODAL:
   // Modal open Create:
@@ -65,7 +65,7 @@ function CustomerCRUD() {
   //For fillter:
 
   //Data fillter
-  const [customersTEST, setCustomersTEST] = useState<any>([]);
+  // const [customersTEST, setCustomersTEST] = useState<any>([]);
 
   // Change fillter (f=> f+1)
 
@@ -76,10 +76,6 @@ function CustomerCRUD() {
   const [updateForm] = Form.useForm();
 
   //Text of Tyography:
-
-  //TableLoading
-
-  const [loadingTable, setLoadingTable] = useState(true);
 
   //Create data
   const handleCreate = (record: any) => {
@@ -93,19 +89,18 @@ function CustomerCRUD() {
       record.Locked = false;
     }
 
-    axios
-      .post(API_URL, record)
+    axiosClient
+      .post(WEB_URL, record)
       .then((res) => {
         // UPLOAD FILE
         const { _id } = res.data.result;
-        console.log("««««« res.data »»»»»", res.data);
         const formData = new FormData();
         formData.append("file", file);
 
         if (file?.uid && file?.type) {
           message.loading("On Updating picture on data!!", 1.5);
           axios
-            .post(`${URL_ENV}/upload/customers/${_id}/image`, formData)
+            .post(`${API_URL}/upload/customers/${_id}/image`, formData)
             .then((respose) => {
               message.success("Created Successfully!!", 1.5);
               createForm.resetFields();
@@ -113,7 +108,8 @@ function CustomerCRUD() {
               setFile(null);
 
               setTimeout(() => {
-                setRefresh((f) => f + 1);
+                // setRefresh((f) => f + 1);
+                refetch();
               }, 2000);
             });
         } else {
@@ -123,7 +119,8 @@ function CustomerCRUD() {
           setFile(null);
 
           setTimeout(() => {
-            setRefresh((f) => f + 1);
+            // setRefresh((f) => f + 1);
+            refetch();
           }, 1000);
           message.success("Created Successfully!!", 1.5);
         }
@@ -135,11 +132,12 @@ function CustomerCRUD() {
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    axios
-      .delete(API_URL + "/" + record._id)
+    axiosClient
+      .delete(WEB_URL + "/" + record._id)
       .then((res) => {
         message.success(" Delete item sucessfully!!", 1.5);
-        setRefresh((f) => f + 1);
+        // setRefresh((f) => f + 1);
+        refetch();
       })
       .catch((err) => {
         console.log(err);
@@ -155,13 +153,14 @@ function CustomerCRUD() {
     record.updatedDate = new Date().toISOString();
 
     record.birthday = record.birthday.toISOString();
-    axios
-      .patch(API_URL + "/" + updateId, record)
+    axiosClient
+      .patch(WEB_URL + "/" + updateId, record)
       .then((res) => {
-        console.log(res);
         setOpen(false);
         setOpenCreate(false);
-        setRefresh((f) => f + 1);
+        // setRefresh((f) => f + 1);
+        refetch();
+
         message.success("Updated sucessfully!!", 1.5);
       })
       .catch((err) => {
@@ -259,7 +258,6 @@ function CustomerCRUD() {
 
   //Search on Skip and Limit
 
-  const [pages, setPages] = useState();
   const [skip, setSkip] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const slideCurrent = (value: any) => {
@@ -267,7 +265,7 @@ function CustomerCRUD() {
     setCurrentPage(value);
   };
   //GET DATA ON FILLTER
-  const URL_FILTER = `${API_URL}?${[
+  const URL_FILTER = `${WEB_URL}?${[
     customerFirstName && `&firstName=${customerFirstName}`,
     customerLastName && `&lastName=${customerLastName}`,
     customerEmail && `&email=${customerEmail}`,
@@ -281,16 +279,29 @@ function CustomerCRUD() {
     .filter(Boolean)
     .join("")}&limit=10`;
 
-  useEffect(() => {
-    axios
-      .get(URL_FILTER)
-      .then((res) => {
-        setCustomersTEST(res.data.results);
-        setPages(res.data.amountResults);
-        setLoadingTable(false);
-      })
-      .catch((err) => console.log(err));
-  }, [URL_FILTER, refresh]);
+  // useEffect(() => {
+  //   axiosClient
+  //     .get(URL_FILTER)
+  //     .then((res) => {
+  //       setCustomersTEST(res.data.results);
+  //       setPages(res.data.amountResults);
+  //       setisLoading(false);
+  //     })
+  //     .catch((err) => console.log(err));
+  // }, [URL_FILTER, refresh]);
+
+  const handleGetMutipleData = () => {
+    return axiosClient.get(URL_FILTER);
+  };
+
+  const {
+    data: customerData,
+    refetch,
+    isLoading,
+  } = useQuery({
+    queryKey: ["getCustomers", URL_FILTER],
+    queryFn: handleGetMutipleData,
+  });
 
   //Setting column
   const columns = [
@@ -377,7 +388,7 @@ function CustomerCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={`${URL_ENV}${record.imageUrl}`}
+                src={`${API_URL}${record.imageUrl}`}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -603,7 +614,7 @@ function CustomerCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`${URL_ENV}/upload/customers/${record._id}/image`}
+            action={`${API_URL}/upload/customers/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -613,7 +624,7 @@ function CustomerCRUD() {
 
               if (info.file.status === "done") {
                 setTimeout(() => {
-                  setRefresh(refresh + 1);
+                  refetch();
                   message.success(
                     `${info.file.name} file uploaded successfully`
                   );
@@ -667,6 +678,7 @@ function CustomerCRUD() {
     <div>
       {/* Modal Create A Customers */}
       <Modal
+        okType="dashed"
         title={`Create Customers `}
         open={openCreate}
         onCancel={() => {
@@ -852,10 +864,10 @@ function CustomerCRUD() {
       <div>
         <Table
           // loading={!customersTEST ? true : false}
-          loading={loadingTable}
+          loading={isLoading}
           rowKey="_id"
           columns={columns}
-          dataSource={customersTEST}
+          dataSource={customerData?.data?.results}
           pagination={false}
           scroll={{ x: "max-content", y: 610 }}
           rowClassName={(record) => {
@@ -868,7 +880,7 @@ function CustomerCRUD() {
           className="container text-end"
           onChange={(e) => slideCurrent(e)}
           defaultCurrent={1}
-          total={pages}
+          total={customerData?.data?.amountResults}
         />
       </div>
 
@@ -876,6 +888,7 @@ function CustomerCRUD() {
 
       {/* Model Update */}
       <Modal
+        okType="dashed"
         open={open}
         title="Update Customer"
         onCancel={() => {

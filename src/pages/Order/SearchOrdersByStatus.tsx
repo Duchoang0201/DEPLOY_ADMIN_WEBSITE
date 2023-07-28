@@ -99,7 +99,7 @@ export default function SearchOrdersByStatus() {
         </Form.Item>
 
         <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
-          <Button type="primary" htmlType="submit" loading={loading}>
+          <Button type="dashed" htmlType="submit" loading={loading}>
             {loading ? "Đang xử lý ..." : "Lọc thông tin"}
           </Button>
         </Form.Item>

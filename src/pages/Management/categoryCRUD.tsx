@@ -23,15 +23,17 @@ import {
   Table,
   Upload,
 } from "antd";
+import { API_URL } from "../../constants/URLS";
 import FormItem from "antd/es/form/FormItem";
 import { axiosClient } from "../../libraries/axiosClient";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 // Date Picker
 
 function CategoryCRUD() {
-  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
   const [file, setFile] = useState<any>(null);
 
   const { auth } = useAuthStore((state: any) => state);
@@ -40,7 +42,7 @@ function CategoryCRUD() {
   // Date Picker Setting
 
   // API OF
-  let API_URL = `/categories`;
+  let WEB_URL = `/categories`;
 
   // MODAL:
   // Modal open Create:
@@ -57,7 +59,7 @@ function CategoryCRUD() {
   //For fillter:
 
   //Data fillter
-  const [categoryTEST, setCategoryTEST] = useState<any>([]);
+  // const [categoryTEST, setCategoryTEST] = useState<any>([]);
 
   // Change fillter (f=> f+1)
 
@@ -69,99 +71,7 @@ function CategoryCRUD() {
 
   //TableLoading
 
-  const [loadingTable, setLoadingTable] = useState(true);
-
   //Text of Tyography:
-
-  //Create data
-  const handleCreate = (record: any) => {
-    record.createdBy = {
-      employeeId: auth.payload._id,
-      firstName: auth.payload.firstName,
-      lastName: auth.payload.lastName,
-    };
-    record.createdDate = new Date().toISOString();
-    if (record.active === undefined) {
-      record.active = false;
-    }
-
-    axiosClient
-      .post(API_URL, record)
-      .then((res) => {
-        // UPLOAD FILE
-        const { _id } = res.data.result;
-        const formData = new FormData();
-        formData.append("file", file);
-
-        if (file?.uid && file?.type) {
-          message.loading("On Updating picture on data!!", 1.5);
-          axiosClient
-            .post(`${URL_ENV}/upload/categories/${_id}/image`, formData)
-            .then((respose) => {
-              message.success("Created Successfully!!", 1.5);
-              createForm.resetFields();
-              setOpenCreate(false);
-              setFile(null);
-
-              setTimeout(() => {
-                setRefresh((f) => f + 1);
-              }, 2000);
-            });
-        } else {
-          createForm.resetFields();
-
-          setOpenCreate(false);
-          setFile(null);
-
-          setTimeout(() => {
-            setRefresh((f) => f + 1);
-          }, 1000);
-          message.success("Created Successfully!!", 1.5);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        message.error(err.response.data.message);
-      });
-  };
-  //Delete a Data
-  const handleDelete = (record: any) => {
-    axiosClient
-      .delete(API_URL + "/" + record._id)
-      .then((res) => {
-        message.success(" Delete item sucessfully!!", 1.5);
-        setRefresh((f) => f + 1);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-  //Update a Data
-  const handleUpdate = (record: any) => {
-    record.updatedBy = {
-      employeeId: auth.payload._id,
-      firstName: auth.payload.firstName,
-      lastName: auth.payload.lastName,
-    };
-    record.updatedDate = new Date().toISOString();
-    if (record.active === undefined) {
-      record.active = false;
-    }
-    if (record.isDeleted === undefined) {
-      record.isDeleted = false;
-    }
-    axiosClient
-      .patch(API_URL + "/" + updateId, record)
-      .then((res) => {
-        setOpen(false);
-        setOpenCreate(false);
-        setRefresh((f) => f + 1);
-        message.success("Updated sucessfully!!", 1.5);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
 
   //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
 
@@ -217,15 +127,17 @@ function CategoryCRUD() {
 
   //Search on Skip and Limit
 
-  const [pages, setPages] = useState();
   const [skip, setSkip] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const slideCurrent = (value: any) => {
     setSkip(value * 10 - 10);
     setCurrentPage(value);
+
+    message.loading(`Data's loading..., please wait!! 😌`);
+    refetch();
   };
   //GET DATA ON FILLTER
-  const URL_FILTER = `${API_URL}?${[
+  const URL_FILTER = `${WEB_URL}?${[
     categoriesName && `&name=${categoriesName}`,
     categoryDescription && `&description=${categoryDescription}`,
     isActive && `&active=${isActive}`,
@@ -235,16 +147,118 @@ function CategoryCRUD() {
     .filter(Boolean)
     .join("")}&limit=10`;
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   axiosClient
+  //     .get(URL_FILTER)
+  //     .then((res) => {
+  //       setCategoryTEST(res.data.results);
+  //       setPages(res.data.amountResults);
+  //     })
+  //     .catch((err) => console.log(err));
+  // }, [URL_FILTER, refresh]);
+
+  const {
+    data: categoriesData,
+    isFetching,
+    refetch,
+    isLoading,
+  } = useQuery({
+    queryKey: ["getCategories"],
+    queryFn: () => {
+      return axiosClient.get(URL_FILTER);
+    },
+  });
+
+  //Create data
+  const handleCreate = (record: any) => {
+    record.createdBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
+    record.createdDate = new Date().toISOString();
+    if (record.active === undefined) {
+      record.active = false;
+    }
+
     axiosClient
-      .get(URL_FILTER)
+      .post(WEB_URL, record)
       .then((res) => {
-        setCategoryTEST(res.data.results);
-        setPages(res.data.amountResults);
-        setLoadingTable(false);
+        // UPLOAD FILE
+        const { _id } = res.data.result;
+        const formData = new FormData();
+        formData.append("file", file);
+
+        if (file?.uid && file?.type) {
+          message.loading("On Updating picture on data!!", 1.5);
+          axios
+            .post(`${API_URL}/upload/categories/${_id}/image`, formData)
+            .then((respose) => {
+              message.success("Created Successfully!!", 1.5);
+              createForm.resetFields();
+              setOpenCreate(false);
+              setFile(null);
+
+              setTimeout(() => {
+                refetch();
+              }, 2000);
+            });
+        } else {
+          createForm.resetFields();
+
+          setOpenCreate(false);
+          setFile(null);
+
+          setTimeout(() => {
+            setRefresh((f) => f + 1);
+          }, 1000);
+          message.success("Created Successfully!!", 1.5);
+        }
       })
-      .catch((err) => console.log(err));
-  }, [URL_FILTER, refresh]);
+      .catch((err) => {
+        console.log(err);
+        message.error(err.response.data.message);
+      });
+  };
+  //Delete a Data
+  const handleDelete = (record: any) => {
+    axiosClient
+      .delete(WEB_URL + "/" + record._id)
+      .then((res) => {
+        message.success(" Delete item sucessfully!!", 1.5);
+        refetch();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+  //Update a Data
+  const handleUpdate = (record: any) => {
+    record.updatedBy = {
+      employeeId: auth.payload._id,
+      firstName: auth.payload.firstName,
+      lastName: auth.payload.lastName,
+    };
+    record.updatedDate = new Date().toISOString();
+    if (record.active === undefined) {
+      record.active = false;
+    }
+    if (record.isDeleted === undefined) {
+      record.isDeleted = false;
+    }
+    axiosClient
+      .patch(WEB_URL + "/" + updateId, record)
+      .then((res) => {
+        setOpen(false);
+        setOpenCreate(false);
+        // setRefresh((f) => f + 1);
+        refetch();
+        message.success("Updated sucessfully!!", 1.5);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
 
   //Setting column
   const columns = [
@@ -345,7 +359,7 @@ function CategoryCRUD() {
           <div>
             {record.imageUrl && (
               <img
-                src={`${URL_ENV}${record.imageUrl}`}
+                src={`${API_URL}${record.imageUrl}`}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
@@ -434,6 +448,7 @@ function CategoryCRUD() {
             title={"Are you sure to delete this product?"}
           >
             <Button
+              type="dashed"
               danger
               icon={<DeleteOutlined />}
               onClick={() => {
@@ -452,7 +467,7 @@ function CategoryCRUD() {
           <Upload
             showUploadList={false}
             name="file"
-            action={`${URL_ENV}/upload/categories/${record._id}/image`}
+            action={`${API_URL}/upload/categories/${record._id}/image`}
             headers={{ authorization: "authorization-text" }}
             onChange={(info) => {
               if (info.file.status !== "uploading") {
@@ -520,6 +535,7 @@ function CategoryCRUD() {
         onOk={() => {
           createForm.submit();
         }}
+        okType="dashed"
         okText="Submit"
       >
         <div className="container d-flex flex-row ">
@@ -670,10 +686,10 @@ function CategoryCRUD() {
       {/* List and function  */}
 
       <Table
-        loading={loadingTable}
+        loading={isLoading && isFetching}
         rowKey="_id"
         columns={columns}
-        dataSource={categoryTEST}
+        dataSource={categoriesData?.data?.results}
         pagination={false}
         scroll={{ x: "max-content", y: 630 }}
         rowClassName={(record) => {
@@ -695,6 +711,7 @@ function CategoryCRUD() {
         onOk={() => {
           updateForm.submit();
         }}
+        okType="dashed"
       >
         <Form form={updateForm} name="updateForm" onFinish={handleUpdate}>
           <div className="row">
@@ -837,7 +854,7 @@ function CategoryCRUD() {
         className="container text-end"
         onChange={(e) => slideCurrent(e)}
         defaultCurrent={1}
-        total={pages}
+        total={categoriesData?.data?.amountResults}
       />
     </div>
   );

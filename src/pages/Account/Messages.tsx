@@ -263,7 +263,7 @@ const Messages: React.FC<any> = () => {
               <div>
                 <Button
                   onClick={() => setOpenCreateConver(true)}
-                  type="primary"
+                  type="dashed"
                   shape="circle"
                   icon={<PlusCircleOutlined />}
                 />{" "}
@@ -425,7 +425,7 @@ const Messages: React.FC<any> = () => {
                       <Form.Item>
                         <Button
                           icon={<SendOutlined />}
-                          type="primary"
+                          type="dashed"
                           htmlType="submit"
                         />
                       </Form.Item>

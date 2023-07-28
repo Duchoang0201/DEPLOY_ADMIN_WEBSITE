@@ -21,10 +21,11 @@ import {
   Table,
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
-import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
+import { useQuery } from "@tanstack/react-query";
+import { axiosClient } from "../../libraries/axiosClient";
 
 interface ISupplier {
   name: string;
@@ -34,12 +35,10 @@ interface ISupplier {
 }
 
 function SupperliersCRUD() {
-  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
-
   const [refresh, setRefresh] = useState(0);
   const { auth } = useAuthStore((state: any) => state);
 
-  let API_URL = `${URL_ENV}/suppliers`;
+  let API_URL = `/suppliers`;
 
   // MODAL:
   // Modal open Create:
@@ -84,10 +83,10 @@ function SupperliersCRUD() {
     }
     record.isDeleted = false;
 
-    axios
+    axiosClient
       .post(API_URL, record)
       .then((res) => {
-        setRefresh((f) => f + 1);
+        refetch();
         setOpenCreate(false);
 
         message.success(" Add new Suppliers sucessfully!", 1.5);
@@ -100,11 +99,12 @@ function SupperliersCRUD() {
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    axios
+    axiosClient
       .delete(API_URL + "/" + record._id)
       .then((res) => {
         message.success(" Delete item sucessfully!!", 1.5);
-        setRefresh((f) => f + 1);
+        // setRefresh((f) => f + 1);
+        refetch();
       })
       .catch((err) => {
         console.log(err);
@@ -124,12 +124,13 @@ function SupperliersCRUD() {
     if (record.isDeleted === undefined) {
       record.isDeleted = false;
     }
-    axios
+    axiosClient
       .patch(API_URL + "/" + updateId, record)
       .then((res) => {
         setOpen(false);
         setOpenCreate(false);
-        setRefresh((f) => f + 1);
+        // setRefresh((f) => f + 1);
+        refetch();
         message.success("Updated sucessfully!!", 1.5);
       })
       .catch((err) => {
@@ -208,7 +209,7 @@ function SupperliersCRUD() {
     setCurrentPage(value);
   };
   //GET DATA ON FILLTER
-  const URL_FILTER = `${URL_ENV}/suppliers?${[
+  const URL_FILTER = `/suppliers?${[
     supplierName && `name=${supplierName}`,
     supplierEmail && `email=${supplierEmail}`,
     supplierPhone && `phoneNumber=${supplierPhone}`,
@@ -221,15 +222,23 @@ function SupperliersCRUD() {
     .join("&")}&limit=10`;
 
   useEffect(() => {
-    axios
+    axiosClient
       .get(URL_FILTER)
       .then((res) => {
         setSupplierTEST(res.data.results);
         setPages(res.data.amountResults);
+
         setLoadingTable(false);
       })
       .catch((err) => console.log(err));
   }, [URL_FILTER, refresh]);
+
+  const { data: supplierData, refetch } = useQuery({
+    queryKey: ["getSuppliers"],
+    queryFn: () => {
+      return axiosClient.get(URL_FILTER);
+    },
+  });
 
   //Setting column
   const columns = [
@@ -528,6 +537,7 @@ function SupperliersCRUD() {
         onCancel={() => {
           setOpenCreate(false);
         }}
+        okType="dashed"
         onOk={() => {
           createForm.submit();
         }}
@@ -663,7 +673,7 @@ function SupperliersCRUD() {
         loading={loadingTable}
         rowKey="_id"
         columns={columns}
-        dataSource={supplierTEST}
+        dataSource={supplierData?.data?.results}
         pagination={false}
         scroll={{ x: "max-content", y: "max-content" }}
         rowClassName={(record) => {
@@ -681,6 +691,7 @@ function SupperliersCRUD() {
 
       {/* Model Update */}
       <Modal
+        okType="dashed"
         open={open}
         title="Update supplier"
         onCancel={() => setOpen(false)}
