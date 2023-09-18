@@ -4,8 +4,9 @@ import { useAuthStore } from "../../../../hooks/useAuthStore";
 import { format } from "timeago.js";
 import { UserOutlined } from "@ant-design/icons";
 import { API_URL } from "../../../../constants/URLS";
+import { useEffect } from "react";
 
-const MessageBox: React.FC<any> = ({ isLast, data }) => {
+const MessageBox: React.FC<any> = ({ setAmountSkip, isLast, data }) => {
   // const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const { auth } = useAuthStore((state: any) => state);

@@ -8,107 +8,153 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
-  Checkbox,
   Form,
   Input,
-  InputNumber,
   message,
   Modal,
-  Pagination,
   Popconfirm,
   Select,
   Space,
   Table,
 } from "antd";
-import FormItem from "antd/es/form/FormItem";
-import { useCallback, useEffect, useState } from "react";
+import { axiosClient } from "../../libraries/axiosClient";
+import { useEffect, useRef, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
-import { useQuery } from "@tanstack/react-query";
-import { axiosClient } from "../../libraries/axiosClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { handleCustomData } from "../../util/handleCustomData";
+import SupplierForm from "../Form/SupplierForm";
 
-interface ISupplier {
-  name: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-}
+import { functionValidate } from "../../validation/FunctionValidate";
+import { customeDataValidate } from "../../validation/customDataValidate";
 
-function SupperliersCRUD() {
-  const [refresh, setRefresh] = useState(0);
+function SupplierCRUD() {
+  const customizeData: any = {
+    collection: "suppliers",
+  };
+  const [searchParams] = useSearchParams();
+  searchParams.set("limit", "10");
+
+  const timeoutSucess = useRef<any>();
+  const [createForm] = Form.useForm();
+  const [updateForm] = Form.useForm();
   const { auth } = useAuthStore((state: any) => state);
 
-  let API_URL = `/suppliers`;
-
-  // MODAL:
-  // Modal open Create:
   const [openCreate, setOpenCreate] = useState(false);
 
   // Modal open Update:
   const [open, setOpen] = useState(false);
 
-  //Delete Item
-  const [deleteItem, setDeleteItem] = useState<ISupplier>();
+  const [deleteItem, setDeleteItem] = useState<any>();
 
-  //For fillter:
+  const onSearchItem = async (record: any) => {
+    searchParams.set("skip", "0");
+    try {
+      if (record.type && record.value) {
+        searchParams.set(record.type, record.value);
 
-  //Data fillter
-  const [supplierTEST, setSupplierTEST] = useState<Array<any>>([]);
+        const res = await customeDataValidate({
+          collection: "Product",
+          searchParams,
+        });
 
-  // Change fillter (f=> f+1)
-  // const [supplierFilter, setSupplierFilter] = useState(API_URL);
+        const result: any = await functionValidate(res);
 
-  const [updateId, setUpdateId] = useState(0);
+        if (result.oke) {
+          await refetch();
+        } else {
+          message.error(result.message);
+          searchParams.delete(record.type);
+        }
+      } else if (
+        record.type &&
+        (record.value === "" ||
+          record.value === undefined ||
+          record.value === null)
+      ) {
+        searchParams.delete(record.type);
+        await refetch();
+      }
+      setCurrentPage(1);
+    } catch (error: any) {
+      message.error(error.message || error.reponse.data.message);
+    }
+  };
 
-  //Create, Update Form setting
-  const [createForm] = Form.useForm();
-  const [updateForm] = Form.useForm();
+  const [currentPage, setCurrentPage] = useState(1);
+  const slideCurrent = (value: any) => {
+    const skipValue = (value - 1) * 10;
+    searchParams.set("skip", skipValue.toString());
+    refetch();
+  };
 
-  //TableLoading
+  const {
+    data: suppliersData,
+    isFetching,
 
-  const [loadingTable, setLoadingTable] = useState(true);
+    refetch,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["getsuppliers"],
+    queryFn: () => {
+      return axiosClient.get(`/suppliers?${searchParams.toString()}`);
+    },
+    onError: (err: any) => {},
+    retry: false,
+  });
 
-  //Text of Tyography:
+  useEffect(() => {}, [isError]);
+  const { mutate, isLoading: isMutating } = useMutation(handleCustomData, {
+    onSuccess: (data) => {
+      if (timeoutSucess.current) {
+        clearTimeout(timeoutSucess.current);
+      }
+      timeoutSucess.current = setTimeout(() => {
+        refetch();
+      }, 500);
+    },
+    onSettled(data: any) {
+      if (data.ok) {
+        message.success("Created Category Sucessfully!!");
+        refetch();
+      }
+      if (data.response?.data?.message) {
+        message.error(data.response?.data?.message);
+      }
+    },
+  });
 
   //Create data
-  const handleCreate = (record: any) => {
+  const handleCreate = async (record: any) => {
+    delete record._id;
     record.createdBy = {
       employeeId: auth.payload._id,
       firstName: auth.payload.firstName,
       lastName: auth.payload.lastName,
     };
+    record.isDeleted = false;
     record.createdDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
     }
-    record.isDeleted = false;
 
-    axiosClient
-      .post(API_URL, record)
-      .then((res) => {
-        refetch();
-        setOpenCreate(false);
+    customizeData.type = "CREATE";
 
-        message.success(" Add new Suppliers sucessfully!", 1.5);
-        createForm.resetFields();
-      })
-      .catch((err) => {
-        console.log(err);
-        message.error(err.response.data.message);
-      });
+    customizeData.data = record;
+    mutate(customizeData);
+
+    setOpenCreate(false);
+    createForm.resetFields();
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    axiosClient
-      .delete(API_URL + "/" + record._id)
-      .then((res) => {
-        message.success(" Delete item sucessfully!!", 1.5);
-        // setRefresh((f) => f + 1);
-        refetch();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    customizeData.type = "DELETE";
+    customizeData.id = record._id;
+
+    console.log(`🚀🚀🚀!..customizeData`, customizeData);
+    mutate(customizeData);
   };
   //Update a Data
   const handleUpdate = (record: any) => {
@@ -124,121 +170,12 @@ function SupperliersCRUD() {
     if (record.isDeleted === undefined) {
       record.isDeleted = false;
     }
-    axiosClient
-      .patch(API_URL + "/" + updateId, record)
-      .then((res) => {
-        setOpen(false);
-        setOpenCreate(false);
-        // setRefresh((f) => f + 1);
-        refetch();
-        message.success("Updated sucessfully!!", 1.5);
-      })
-      .catch((err) => {
-        console.log(err);
-        message.error(`${err.response.data.message}`, 2);
-      });
+    customizeData.type = "PATCH";
+    customizeData.id = record._id;
+    customizeData.data = record;
+    mutate(customizeData);
+    setOpen(false);
   };
-
-  //SEARCH ISDELETE ITEM
-
-  //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
-
-  const [isDelete, setIsDelete] = useState("");
-  const [isActive, setIsActive] = useState("");
-  const onSearchIsDelete = useCallback((value: any) => {
-    if (value === "active") {
-      setIsActive("true");
-      setIsDelete("");
-    }
-    if (value === "unActive") {
-      setIsActive("false");
-      setIsDelete("");
-    }
-    if (value === "Deleted") {
-      setIsDelete("true");
-      setIsActive("");
-    }
-    if (value !== "active" && value !== "unActive" && value !== "Deleted") {
-      setIsActive("");
-      setIsDelete("");
-    }
-  }, []);
-
-  //SEARCH DEPEN ON NAME
-  const [supplierName, setSuplierName] = useState("");
-
-  const onSearchSupplierName = useCallback((value: any) => {
-    if (value) {
-      setSuplierName(value);
-    } else {
-      setSuplierName("");
-    }
-  }, []);
-
-  //SEARCH DEPEN ON EMAIL
-  const [supplierEmail, setSuplierEmail] = useState("");
-
-  const onSearchProductEmail = (record: any) => {
-    setSuplierEmail(record);
-  };
-  //SEARCH DEPEN ON PHONENUMBER
-  const [supplierPhone, setSuplierPhone] = useState("");
-
-  const onSearchProductPhone = (record: any) => {
-    setSuplierPhone(record);
-  };
-
-  //SEARCH DEPEN ON ADDRESS
-  const [supplierAddress, setSuplierAddress] = useState("");
-
-  const onSearchProductAddress = (record: any) => {
-    if (record) {
-      setSuplierAddress(record);
-    } else {
-      setSuplierAddress("");
-    }
-  };
-
-  //Search on Skip and Limit
-
-  const [pages, setPages] = useState();
-  const [skip, setSkip] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const slideCurrent = (value: any) => {
-    setSkip(value * 10 - 10);
-    setCurrentPage(value);
-  };
-  //GET DATA ON FILLTER
-  const URL_FILTER = `/suppliers?${[
-    supplierName && `name=${supplierName}`,
-    supplierEmail && `email=${supplierEmail}`,
-    supplierPhone && `phoneNumber=${supplierPhone}`,
-    supplierAddress && `address=${supplierAddress}`,
-    isActive && `active=${isActive}`,
-    isDelete && `isDeleted=${isDelete}`,
-    skip && `skip=${skip}`,
-  ]
-    .filter(Boolean)
-    .join("&")}&limit=10`;
-
-  useEffect(() => {
-    axiosClient
-      .get(URL_FILTER)
-      .then((res) => {
-        setSupplierTEST(res.data.results);
-        setPages(res.data.amountResults);
-
-        setLoadingTable(false);
-      })
-      .catch((err) => console.log(err));
-  }, [URL_FILTER, refresh]);
-
-  const { data: supplierData, refetch } = useQuery({
-    queryKey: ["getSuppliers"],
-    queryFn: () => {
-      return axiosClient.get(URL_FILTER);
-    },
-  });
 
   //Setting column
   const columns = [
@@ -247,7 +184,7 @@ function SupperliersCRUD() {
       title: () => {
         return (
           <div>
-            {isActive || isDelete ? (
+            {searchParams.get("active") || searchParams.get("isDeleted") ? (
               <div className="text-danger">No</div>
             ) : (
               <div className="secondary">No</div>
@@ -261,7 +198,8 @@ function SupperliersCRUD() {
         return (
           <div>
             <Space>
-              {currentPage === 1 ? index + 1 : index + currentPage * 10 - 9}
+              {index + 1 + (currentPage - 1) * 10}
+
               {record.active === true && !record.isDeleted && (
                 <span style={{ fontSize: "16px", color: "#08c" }}>
                   <CheckCircleOutlined /> Active
@@ -295,13 +233,34 @@ function SupperliersCRUD() {
               <Select
                 allowClear
                 onClear={() => {
-                  setIsDelete("");
+                  searchParams.delete("active");
+                  searchParams.delete("isDeleted");
+                  refetch();
                 }}
                 style={{ width: "125px" }}
                 placeholder="Select a supplier"
                 optionFilterProp="children"
                 showSearch
-                onChange={onSearchIsDelete}
+                onChange={(e) => {
+                  let searchValue: any = {};
+                  if (e === "active") {
+                    searchValue.type = "active";
+                    searchValue.value = "true";
+                  }
+                  if (e === "unActive") {
+                    searchValue = {};
+                    searchValue.type = "active";
+                    searchValue.value = "false";
+                  }
+                  if (e === "isDeleted") {
+                    searchValue = {};
+
+                    searchValue.type = "isDeleted";
+                    searchValue.value = "true";
+                  }
+                  console.log(`🚀🚀🚀!..e`, e);
+                  onSearchItem(searchValue);
+                }}
                 filterOption={(input, option) =>
                   (option?.label ?? "")
                     .toLowerCase()
@@ -333,7 +292,7 @@ function SupperliersCRUD() {
       title: () => {
         return (
           <div>
-            {supplierEmail ? (
+            {searchParams.get("email") ? (
               <div className="text-danger">Email</div>
             ) : (
               <div className="secondary">Email</div>
@@ -349,7 +308,10 @@ function SupperliersCRUD() {
             <Search
               allowClear
               placeholder="Enter email"
-              onSearch={onSearchProductEmail}
+              onSearch={(e: any) => {
+                const valueSearch = { type: "email", value: e };
+                onSearchItem(valueSearch);
+              }}
               style={{ width: 200 }}
             />
           </div>
@@ -361,7 +323,7 @@ function SupperliersCRUD() {
       title: () => {
         return (
           <div>
-            {supplierName ? (
+            {searchParams.get("name") ? (
               <div className="text-danger">Name</div>
             ) : (
               <div className="secondary">Name</div>
@@ -377,26 +339,27 @@ function SupperliersCRUD() {
             <div>
               <Select
                 allowClear
-                // autoClearSearchValue={!supplierId ? true : false}
-                onClear={() => {
-                  setSuplierName("");
-                }}
                 style={{ width: "125px" }}
                 placeholder="Select a supplier"
                 optionFilterProp="children"
-                onChange={onSearchSupplierName}
+                onSearch={(e: any) => {
+                  const valueSearch = { type: "name", value: e };
+                  onSearchItem(valueSearch);
+                }}
                 showSearch
                 filterOption={(input: any, option: any) =>
                   (option?.label ?? "")
                     .toLowerCase()
                     .includes(input.toLowerCase())
                 }
-                options={supplierTEST.map((item: any, index: any) => {
-                  return {
-                    label: `${item.name}`,
-                    value: item.name,
-                  };
-                })}
+                options={suppliersData?.data?.results?.map(
+                  (item: any, index: any) => {
+                    return {
+                      label: `${item.name}`,
+                      value: item.name,
+                    };
+                  }
+                )}
               />
             </div>
           </>
@@ -408,7 +371,7 @@ function SupperliersCRUD() {
       title: () => {
         return (
           <div>
-            {supplierPhone ? (
+            {searchParams.get("phoneNumber") ? (
               <div className="text-danger">Phone Number</div>
             ) : (
               <div className="secondary">Phone Number</div>
@@ -421,11 +384,14 @@ function SupperliersCRUD() {
       filterDropdown: () => {
         return (
           <div style={{ padding: 8 }}>
-            <Search
+            <Input.Search
+              step="string"
               allowClear
               placeholder="Enter phone number"
-              onSearch={onSearchProductPhone}
-              style={{ width: 200 }}
+              onSearch={(e: any) => {
+                const valueSearch = { type: "phoneNumber", value: e };
+                onSearchItem(valueSearch);
+              }}
             />
           </div>
         );
@@ -436,7 +402,7 @@ function SupperliersCRUD() {
       title: () => {
         return (
           <div>
-            {supplierAddress ? (
+            {searchParams.get("address") ? (
               <div className="text-danger">Address</div>
             ) : (
               <div className="secondary">Address</div>
@@ -452,7 +418,10 @@ function SupperliersCRUD() {
             <Search
               allowClear
               placeholder="Enter address"
-              onSearch={onSearchProductAddress}
+              onSearch={(e: any) => {
+                const valueSearch = { type: "address", value: e };
+                onSearchItem(valueSearch);
+              }}
               style={{ width: 200 }}
             />
           </div>
@@ -474,7 +443,6 @@ function SupperliersCRUD() {
             icon={<EditOutlined />}
             onClick={() => {
               setOpen(true);
-              setUpdateId(record._id);
               updateForm.setFieldsValue(record);
             }}
           ></Button>
@@ -500,13 +468,15 @@ function SupperliersCRUD() {
             <Space direction="vertical">
               <Button
                 style={{ width: "150px" }}
-                onClick={() => {
-                  setSuplierName("");
-                  setSuplierEmail("");
-                  setSuplierPhone("");
-                  setSuplierAddress("");
-                  setIsActive("");
-                  setIsDelete("");
+                onClick={async () => {
+                  const arrValue: any = [];
+                  await searchParams.forEach((value, key) => {
+                    arrValue.push({ value: "", type: key });
+                  });
+
+                  await arrValue.map(async (item: any) => {
+                    await onSearchItem(item);
+                  });
                 }}
                 icon={<ClearOutlined />}
               >
@@ -527,155 +497,50 @@ function SupperliersCRUD() {
       },
     },
   ];
+
   return (
     <div>
-      {/* Modal Create A SUPPLIER */}
-
+      {/* Modal Create A Category */}
       <Modal
-        title={`Create Supplier `}
+        title="Create Category"
         open={openCreate}
         onCancel={() => {
           setOpenCreate(false);
         }}
-        okType="dashed"
         onOk={() => {
           createForm.submit();
         }}
+        okType="dashed"
         okText="Submit"
       >
-        <div className="container d-flex flex-row ">
-          <Form form={createForm} name="createForm" onFinish={handleCreate}>
-            <div className="row">
-              <FormItem
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="Name"
-                name="name"
-                rules={[{ required: true, message: "Please input Name!" }]}
-              >
-                <Input />
-              </FormItem>
-              <FormItem
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="Email"
-                name="email"
-                rules={[
-                  {
-                    type: "email",
-                    message: "Please enter a valid email address!",
-                  },
-                  {
-                    required: true,
-                    message: "Please enter your email address!",
-                  },
-                ]}
-              >
-                <Input />
-              </FormItem>
-            </div>
-            <div className="row">
-              {" "}
-              <FormItem
-                hasFeedback
-                label="Phone"
-                name="phoneNumber"
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                rules={[
-                  {
-                    pattern: /^[+]?[0-9]{8,}$/,
-                    message: "Please enter a valid phone number!",
-                  },
-                  {
-                    required: true,
-                    message: "Please enter your phone number!",
-                  },
-                ]}
-              >
-                <Input />
-              </FormItem>
-              <FormItem
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="Address"
-                name="address"
-                rules={[{ required: true, message: "Please input Email!" }]}
-              >
-                <Input />
-              </FormItem>
-              <Form.Item
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="active"
-                name="active"
-                valuePropName="checked"
-              >
-                <Checkbox />
-              </Form.Item>
-              <Form.Item
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="sortOder"
-                name="sortOder"
-              >
-                <InputNumber min={1} />
-              </Form.Item>
-              <Form.Item
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="Note"
-                name="note"
-              >
-                <Input />
-              </Form.Item>
-            </div>
-          </Form>
-        </div>
+        <Form form={createForm} name="createForm" onFinish={handleCreate}>
+          <SupplierForm />
+        </Form>
       </Modal>
 
       {/* List and function  */}
+
       <Table
-        loading={loadingTable}
+        bordered
+        loading={isLoading || isFetching || isMutating}
         rowKey="_id"
         columns={columns}
-        dataSource={supplierData?.data?.results}
-        pagination={false}
-        scroll={{ x: "max-content", y: "max-content" }}
+        dataSource={suppliersData?.data?.results}
+        pagination={{
+          // pageSize: 10,
+          onChange: (e) => {
+            slideCurrent(e);
+            setCurrentPage(e);
+          },
+          total: suppliersData?.data?.amountResults,
+
+          showTotal: (total, range) =>
+            `Showing ${range[0]}-${range[1]} of ${total} items`,
+
+          size: "small",
+          current: currentPage,
+        }}
+        scroll={{ x: "max-content", y: 630 }}
         rowClassName={(record) => {
           if (record.active === false && record.isDeleted === false) {
             return "bg-dark-subtle";
@@ -685,132 +550,24 @@ function SupperliersCRUD() {
             return "";
           }
         }}
-      >
-        {" "}
-      </Table>
+      />
 
       {/* Model Update */}
       <Modal
-        okType="dashed"
         open={open}
-        title="Update supplier"
+        title="Update Supplier"
         onCancel={() => setOpen(false)}
         onOk={() => {
           updateForm.submit();
         }}
+        okType="dashed"
       >
         <Form form={updateForm} name="updateForm" onFinish={handleUpdate}>
-          <div className="row">
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Name"
-              name="name"
-              rules={[{ required: true, message: "Please input Name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Email"
-              name="email"
-              rules={[{ required: true, message: "Please input Email!" }]}
-            >
-              <Input />
-            </FormItem>
-          </div>
-          <div className="row">
-            {" "}
-            <FormItem
-              hasFeedback
-              label="Phone"
-              name="phoneNumber"
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Address"
-              name="address"
-              rules={[{ required: true, message: "Please input Email!" }]}
-            >
-              <Input />
-            </FormItem>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="active"
-              name="active"
-              valuePropName="checked"
-            >
-              <Checkbox />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="isDeleted"
-              name="isDeleted"
-              valuePropName="checked"
-            >
-              <Checkbox />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Note"
-              name="note"
-            >
-              <Input />
-            </Form.Item>
-          </div>
+          <SupplierForm />
         </Form>
       </Modal>
-      <Pagination
-        className="container text-end"
-        onChange={(e) => slideCurrent(e)}
-        defaultCurrent={1}
-        total={pages}
-      />
     </div>
   );
 }
 
-export default SupperliersCRUD;
+export default SupplierCRUD;

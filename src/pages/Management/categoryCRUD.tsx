@@ -10,13 +10,9 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
-  Checkbox,
   Form,
-  Input,
-  InputNumber,
   message,
   Modal,
-  Pagination,
   Popconfirm,
   Select,
   Space,
@@ -24,138 +20,81 @@ import {
   Upload,
 } from "antd";
 import { API_URL } from "../../constants/URLS";
-import FormItem from "antd/es/form/FormItem";
 import { axiosClient } from "../../libraries/axiosClient";
-import { useMemo, useState } from "react";
+import { useRef, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-// Date Picker
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { handleCustomData } from "../../util/handleCustomData";
+import CategoryForm from "../Form/CategoryForm";
+import { customeDataValidate } from "../../validation/customDataValidate";
+import { functionValidate } from "../../validation/FunctionValidate";
 
+const BASE_URL = "/categories";
 function CategoryCRUD() {
-  const [file, setFile] = useState<any>(null);
+  // Inside your component
+  const customizeData: any = {
+    collection: "categories",
+  };
+  const [searchParams] = useSearchParams();
+  searchParams.set("limit", "10");
 
+  const timeoutSucess = useRef<any>();
+  const [file, setFile] = useState<any>(null);
+  //Create, Update Form setting
+  const [createForm] = Form.useForm();
+  const [updateForm] = Form.useForm();
   const { auth } = useAuthStore((state: any) => state);
   const [refresh, setRefresh] = useState(0);
 
-  // Date Picker Setting
-
-  // API OF
-  let WEB_URL = `/categories`;
-
-  // MODAL:
-  // Modal open Create:
   const [openCreate, setOpenCreate] = useState(false);
 
   // Modal open Update:
   const [open, setOpen] = useState(false);
 
-  //Model open Confirm Delete
-  // const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
-  //Delete Item
   const [deleteItem, setDeleteItem] = useState<any>();
 
-  //For fillter:
+  const onSearchItem = async (record: any) => {
+    searchParams.set("skip", "0");
+    try {
+      if (record.type && record.value) {
+        searchParams.set(record.type, record.value);
 
-  //Data fillter
-  // const [categoryTEST, setCategoryTEST] = useState<any>([]);
+        const res = await customeDataValidate({
+          collection: "Product",
+          searchParams,
+        });
 
-  // Change fillter (f=> f+1)
+        const result: any = await functionValidate(res);
 
-  const [updateId, setUpdateId] = useState(0);
-
-  //Create, Update Form setting
-  const [createForm] = Form.useForm();
-  const [updateForm] = Form.useForm();
-
-  //TableLoading
-
-  //Text of Tyography:
-
-  //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
-
-  const [isDelete, setIsDelete] = useState("");
-  const [isActive, setIsActive] = useState("");
-  const onSearchIsDelete = useMemo(
-    () => (value: any) => {
-      if (value === "active") {
-        setIsActive("true");
-        setIsDelete("");
+        if (result.oke) {
+          await refetch();
+        } else {
+          message.error(result.message);
+          searchParams.delete(record.type);
+        }
+      } else if (
+        record.type &&
+        (record.value === "" ||
+          record.value === undefined ||
+          record.value === null)
+      ) {
+        searchParams.delete(record.type);
+        await refetch();
       }
-      if (value === "unActive") {
-        setIsActive("false");
-        setIsDelete("");
-      }
-      if (value === "Deleted") {
-        setIsDelete("true");
-        setIsActive("");
-      }
-      if (value !== "active" && value !== "unActive" && value !== "Deleted") {
-        setIsActive("");
-        setIsDelete("");
-      }
-    },
-    []
-  );
+      setCurrentPage(1);
+    } catch (error: any) {
+      message.error(error.message || error.reponse.data.message);
+    }
+  };
 
-  //SEARCH DEPEN ON NAME
-  const [categoriesName, setCategoriesName] = useState("");
-
-  const onSearchCategoriesName = useMemo(() => {
-    return (value: any) => {
-      if (value) {
-        setCategoriesName(value);
-      } else {
-        setCategoriesName("");
-      }
-    };
-  }, []);
-
-  //SEARCH DEPEN ON DESCRIPTION
-  const [categoryDescription, setCategoryDescription] = useState("");
-
-  const onSearchCategoryDescription = useMemo(() => {
-    return (record: any) => {
-      if (record) {
-        setCategoryDescription(record);
-      } else {
-        setCategoryDescription("");
-      }
-    };
-  }, []);
-
-  //Search on Skip and Limit
-
-  const [skip, setSkip] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const slideCurrent = (value: any) => {
-    setSkip(value * 10 - 10);
-    setCurrentPage(value);
-
-    message.loading(`Data's loading..., please wait!! 😌`);
+    const skipValue = (value - 1) * 10;
+    searchParams.set("skip", skipValue.toString());
     refetch();
   };
-  //GET DATA ON FILLTER
-  const URL_FILTER = `${WEB_URL}?${[
-    categoriesName && `&name=${categoriesName}`,
-    categoryDescription && `&description=${categoryDescription}`,
-    isActive && `&active=${isActive}`,
-    isDelete && `&isDeleted=${isDelete}`,
-    skip && `&skip=${skip}`,
-  ]
-    .filter(Boolean)
-    .join("")}&limit=10`;
-
-  // useEffect(() => {
-  //   axiosClient
-  //     .get(URL_FILTER)
-  //     .then((res) => {
-  //       setCategoryTEST(res.data.results);
-  //       setPages(res.data.amountResults);
-  //     })
-  //     .catch((err) => console.log(err));
-  // }, [URL_FILTER, refresh]);
 
   const {
     data: categoriesData,
@@ -163,74 +102,65 @@ function CategoryCRUD() {
     refetch,
     isLoading,
   } = useQuery({
-    queryKey: ["getCategories"],
+    queryKey: ["getCategories", searchParams.toString(), searchParams],
     queryFn: () => {
-      return axiosClient.get(URL_FILTER);
+      customizeData.type = "GET";
+
+      return axiosClient.get(`${BASE_URL}?${searchParams.toString()}`);
+    },
+  });
+
+  const { mutate, isLoading: isMutating } = useMutation(handleCustomData, {
+    onSuccess: (data) => {
+      if (timeoutSucess.current) {
+        clearTimeout(timeoutSucess.current);
+      }
+      timeoutSucess.current = setTimeout(() => {
+        refetch();
+      }, 2000);
+    },
+    onSettled(data: any) {
+      if (data.ok) {
+        message.success("Created Category Sucessfully!!");
+        refetch();
+      }
+      if (data.response?.data?.message) {
+        message.error(data.response?.data?.message);
+      }
     },
   });
 
   //Create data
-  const handleCreate = (record: any) => {
+  const handleCreate = async (record: any) => {
+    delete record._id;
     record.createdBy = {
       employeeId: auth.payload._id,
       firstName: auth.payload.firstName,
       lastName: auth.payload.lastName,
     };
+    record.isDeleted = false;
     record.createdDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
     }
 
-    axiosClient
-      .post(WEB_URL, record)
-      .then((res) => {
-        // UPLOAD FILE
-        const { _id } = res.data.result;
-        const formData = new FormData();
-        formData.append("file", file);
+    customizeData.type = "CREATE";
 
-        if (file?.uid && file?.type) {
-          message.loading("On Updating picture on data!!", 1.5);
-          axios
-            .post(`${API_URL}/upload/categories/${_id}/image`, formData)
-            .then((respose) => {
-              message.success("Created Successfully!!", 1.5);
-              createForm.resetFields();
-              setOpenCreate(false);
-              setFile(null);
+    if (file.type) {
+      customizeData.file = file;
+    }
+    customizeData.data = record;
+    mutate(customizeData);
 
-              setTimeout(() => {
-                refetch();
-              }, 2000);
-            });
-        } else {
-          createForm.resetFields();
-
-          setOpenCreate(false);
-          setFile(null);
-
-          setTimeout(() => {
-            setRefresh((f) => f + 1);
-          }, 1000);
-          message.success("Created Successfully!!", 1.5);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        message.error(err.response.data.message);
-      });
+    setOpenCreate(false);
+    setFile(null);
+    createForm.resetFields();
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    axiosClient
-      .delete(WEB_URL + "/" + record._id)
-      .then((res) => {
-        message.success(" Delete item sucessfully!!", 1.5);
-        refetch();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    customizeData.type = "DELETE";
+    customizeData.id = record._id;
+    mutate(customizeData);
   };
   //Update a Data
   const handleUpdate = (record: any) => {
@@ -246,18 +176,11 @@ function CategoryCRUD() {
     if (record.isDeleted === undefined) {
       record.isDeleted = false;
     }
-    axiosClient
-      .patch(WEB_URL + "/" + updateId, record)
-      .then((res) => {
-        setOpen(false);
-        setOpenCreate(false);
-        // setRefresh((f) => f + 1);
-        refetch();
-        message.success("Updated sucessfully!!", 1.5);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    customizeData.type = "PATCH";
+    customizeData.id = record._id;
+    customizeData.data = record;
+    mutate(customizeData);
+    setOpen(false);
   };
 
   //Setting column
@@ -267,7 +190,7 @@ function CategoryCRUD() {
       title: () => {
         return (
           <div>
-            {isActive || isDelete ? (
+            {searchParams.get("active") || searchParams.get("isDeleted") ? (
               <div className="text-danger">No</div>
             ) : (
               <div className="secondary">No</div>
@@ -281,7 +204,8 @@ function CategoryCRUD() {
         return (
           <div>
             <Space>
-              {currentPage === 1 ? index + 1 : index + currentPage * 10 - 9}
+              {index + 1 + (currentPage - 1) * 10}
+
               {record.active === true && !record.isDeleted && (
                 <span style={{ fontSize: "16px", color: "#08c" }}>
                   <CheckCircleOutlined /> Active
@@ -315,13 +239,33 @@ function CategoryCRUD() {
               <Select
                 allowClear
                 onClear={() => {
-                  setIsDelete("");
+                  searchParams.delete("active");
+                  searchParams.delete("isDeleted");
+                  refetch();
                 }}
                 style={{ width: "125px" }}
                 placeholder="Select a supplier"
                 optionFilterProp="children"
                 showSearch
-                onChange={onSearchIsDelete}
+                onChange={(e) => {
+                  let searchValue: any = {};
+                  if (e === "active") {
+                    searchValue.type = "active";
+                    searchValue.value = "true";
+                  }
+                  if (e === "unActive") {
+                    searchValue = {};
+                    searchValue.type = "active";
+                    searchValue.value = "false";
+                  }
+                  if (e === "isDeleted") {
+                    searchValue = {};
+
+                    searchValue.type = "isDeleted";
+                    searchValue.value = "true";
+                  }
+                  onSearchItem(searchValue);
+                }}
                 filterOption={(input, option) =>
                   (option?.label ?? "")
                     .toLowerCase()
@@ -337,7 +281,7 @@ function CategoryCRUD() {
                     label: "Unactive",
                   },
                   {
-                    value: "Deleted",
+                    value: "isDeleted",
                     label: "Deleted",
                   },
                 ]}
@@ -356,7 +300,7 @@ function CategoryCRUD() {
       dataIndex: "imageUrl",
       render: (text: any, record: any, index: any) => {
         return (
-          <div>
+          <div className="flex justify-center items-center">
             {record.imageUrl && (
               <img
                 src={`${API_URL}${record.imageUrl}`}
@@ -373,7 +317,7 @@ function CategoryCRUD() {
       title: () => {
         return (
           <div>
-            {categoriesName ? (
+            {searchParams.get("name") ? (
               <div className="text-danger">Name</div>
             ) : (
               <div className="secondary">Name</div>
@@ -389,7 +333,10 @@ function CategoryCRUD() {
             <Search
               allowClear
               placeholder="Enter name"
-              onSearch={onSearchCategoriesName}
+              onSearch={(e: any) => {
+                const valueSearch = { type: "name", value: e };
+                onSearchItem(valueSearch);
+              }}
               style={{ width: 200 }}
             />
           </div>
@@ -402,7 +349,7 @@ function CategoryCRUD() {
       title: () => {
         return (
           <div>
-            {categoryDescription ? (
+            {searchParams.get("description") ? (
               <div className="text-danger">Description</div>
             ) : (
               <div className="secondary">Description</div>
@@ -418,7 +365,10 @@ function CategoryCRUD() {
             <Search
               allowClear
               placeholder="Enter description"
-              onSearch={onSearchCategoryDescription}
+              onSearch={(e: any) => {
+                const valueSearch = { type: "description", value: e };
+                onSearchItem(valueSearch);
+              }}
               style={{ width: 200 }}
             />
           </div>
@@ -460,7 +410,6 @@ function CategoryCRUD() {
             icon={<EditOutlined />}
             onClick={() => {
               setOpen(true);
-              setUpdateId(record._id);
               updateForm.setFieldsValue(record);
             }}
           ></Button>
@@ -476,12 +425,8 @@ function CategoryCRUD() {
               }
 
               if (info.file.status === "done") {
-                setTimeout(() => {
-                  setRefresh(refresh + 1);
-                  message.success(
-                    `${info.file.name} file uploaded successfully`
-                  );
-                }, 2000);
+                setRefresh(refresh + 1);
+                message.success(`${info.file.name} file uploaded successfully`);
               } else if (info.file.status === "error") {
                 message.error(`${info.file.name} file upload failed.`);
               }
@@ -497,11 +442,15 @@ function CategoryCRUD() {
             <Space direction="vertical">
               <Button
                 style={{ width: "150px" }}
-                onClick={() => {
-                  setCategoriesName("");
-                  setCategoryDescription("");
-                  setIsActive("");
-                  setIsDelete("");
+                onClick={async () => {
+                  const arrValue: any = [];
+                  await searchParams.forEach((value, key) => {
+                    arrValue.push({ value: "", type: key });
+                  });
+
+                  await arrValue.map(async (item: any) => {
+                    await onSearchItem(item);
+                  });
                 }}
                 icon={<ClearOutlined />}
               >
@@ -527,7 +476,7 @@ function CategoryCRUD() {
     <div>
       {/* Modal Create A Category */}
       <Modal
-        title={`Create Category `}
+        title="Create Category"
         open={openCreate}
         onCancel={() => {
           setOpenCreate(false);
@@ -541,111 +490,7 @@ function CategoryCRUD() {
         <div className="container d-flex flex-row ">
           <Form form={createForm} name="createForm" onFinish={handleCreate}>
             <div className="row">
-              <FormItem
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="Name"
-                name="name"
-                rules={[{ required: true, message: "Please input Name!" }]}
-              >
-                <Input />
-              </FormItem>
-              <FormItem
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="description"
-                name="description"
-                rules={[
-                  { required: true, message: "Please input Description!" },
-                ]}
-              >
-                <Input />
-              </FormItem>
-              <FormItem
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="promotionPosition"
-                name="promotionPosition"
-              >
-                <Select
-                  mode="multiple"
-                  allowClear
-                  showSearch
-                  placeholder="Select promotion"
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    (option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  options={[
-                    {
-                      value: "TOP-MONTH",
-                      label: "TOP-MONTH",
-                    },
-                    {
-                      value: "DEAL",
-                      label: "DEAL",
-                    },
-                  ]}
-                />
-              </FormItem>
-              <Form.Item
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="active"
-                name="active"
-                valuePropName="checked"
-              >
-                <Checkbox />
-              </Form.Item>
-
-              <Form.Item
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="sortOder"
-                name="sortOder"
-              >
-                <InputNumber min={1} />
-              </Form.Item>
-              <Form.Item
-                labelCol={{
-                  span: 7,
-                }}
-                wrapperCol={{
-                  span: 16,
-                }}
-                hasFeedback
-                label="Note"
-                name="note"
-              >
-                <Input />
-              </Form.Item>
+              <CategoryForm />
               <Form.Item
                 labelCol={{
                   span: 7,
@@ -686,11 +531,25 @@ function CategoryCRUD() {
       {/* List and function  */}
 
       <Table
-        loading={isLoading && isFetching}
+        bordered
+        loading={isLoading || isFetching || isMutating}
         rowKey="_id"
         columns={columns}
         dataSource={categoriesData?.data?.results}
-        pagination={false}
+        pagination={{
+          // pageSize: 10,
+          onChange: (e) => {
+            slideCurrent(e);
+            setCurrentPage(e);
+          },
+          total: categoriesData?.data?.amountResults,
+
+          showTotal: (total, range) =>
+            `Showing ${range[0]}-${range[1]} of ${total} items`,
+
+          size: "small",
+          current: currentPage,
+        }}
         scroll={{ x: "max-content", y: 630 }}
         rowClassName={(record) => {
           if (record.active === false && record.isDeleted === false) {
@@ -715,147 +574,10 @@ function CategoryCRUD() {
       >
         <Form form={updateForm} name="updateForm" onFinish={handleUpdate}>
           <div className="row">
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Name"
-              name="name"
-              rules={[{ required: true, message: "Please input Name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Description"
-              name="description"
-              rules={[{ required: true, message: "Please input Description!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="coverImageUrl"
-              name="coverImageUrl"
-              rules={[
-                { required: true, message: "Please input coverImageUrl!" },
-              ]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="promotionPosition"
-              name="promotionPosition"
-            >
-              <Select
-                mode="multiple"
-                allowClear
-                showSearch
-                placeholder="Select promotion"
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-                options={[
-                  {
-                    value: "TOP-MONTH",
-                    label: "TOP-MONTH",
-                  },
-                  {
-                    value: "DEAL",
-                    label: "DEAL",
-                  },
-                ]}
-              />
-            </FormItem>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="active"
-              name="active"
-              valuePropName="checked"
-            >
-              <Checkbox />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="isDeleted"
-              name="isDeleted"
-              valuePropName="checked"
-            >
-              <Checkbox />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="sortOrder"
-              name="sortOrder"
-            >
-              <InputNumber min={1} />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Note"
-              name="note"
-            >
-              <Input />
-            </Form.Item>
+            <CategoryForm />
           </div>
         </Form>
       </Modal>
-      <Pagination
-        className="container text-end"
-        onChange={(e) => slideCurrent(e)}
-        defaultCurrent={1}
-        total={categoriesData?.data?.amountResults}
-      />
     </div>
   );
 }

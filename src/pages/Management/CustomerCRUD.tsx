@@ -9,139 +9,158 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
-  DatePicker,
   Form,
-  Input,
+  DatePicker,
   message,
   Modal,
-  Pagination,
   Popconfirm,
   Select,
   Space,
-  Switch,
   Table,
   Upload,
 } from "antd";
-import FormItem from "antd/es/form/FormItem";
-import { API_URL } from "../../constants/URLS";
-import React, { useCallback, useMemo, useState } from "react";
+import { axiosClient } from "../../libraries/axiosClient";
+import { useRef, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
-// Date Picker
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { handleCustomData } from "../../util/handleCustomData";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import moment from "moment";
-import { axiosClient } from "../../libraries/axiosClient";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 
+import { functionValidate } from "../../validation/FunctionValidate";
+import { customeDataValidate } from "../../validation/customDataValidate";
+import { API_URL } from "../../constants/URLS";
+import CustomerForm from "../Form/CustomerForm";
+const { RangePicker } = DatePicker;
+dayjs.extend(customParseFormat);
+const dateFormat = "DD/MM/YYYY";
 function CustomerCRUD() {
-  //Set File avatar
+  const customizeData: any = {
+    collection: "customers",
+  };
 
   const [file, setFile] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  searchParams.set("limit", "10");
 
+  const timeoutSucess = useRef<any>();
+  const [createForm] = Form.useForm();
+  const [updateForm] = Form.useForm();
   const { auth } = useAuthStore((state: any) => state);
 
-  // Date Picker Setting
-
-  const { RangePicker } = DatePicker;
-  dayjs.extend(customParseFormat);
-
-  const dateFormat = "DD/MM/YYYY";
-
-  // API OF COLLECTIOn
-  let WEB_URL = `/customers`;
-
-  // MODAL:
-  // Modal open Create:
   const [openCreate, setOpenCreate] = useState(false);
 
   // Modal open Update:
   const [open, setOpen] = useState(false);
 
-  //Delete Item
   const [deleteItem, setDeleteItem] = useState<any>();
 
-  //For fillter:
+  const onSearchItem = async (record: any) => {
+    searchParams.set("skip", "0");
+    try {
+      if (record.type && record.value) {
+        searchParams.set(record.type, record.value);
 
-  //Data fillter
-  // const [customersTEST, setCustomersTEST] = useState<any>([]);
+        const res = await customeDataValidate({
+          collection: "Product",
+          searchParams,
+        });
 
-  // Change fillter (f=> f+1)
+        const result: any = await functionValidate(res);
 
-  const [updateId, setUpdateId] = useState(0);
+        if (result.oke) {
+          await refetch();
+        } else {
+          message.error(result.message);
+          searchParams.delete(record.type);
+        }
+      } else if (
+        record.type &&
+        (record.value === "" ||
+          record.value === undefined ||
+          record.value === null)
+      ) {
+        searchParams.delete(record.type);
+        await refetch();
+      }
+      setCurrentPage(1);
+    } catch (error: any) {
+      message.error(error.message || error.reponse.data.message);
+    }
+  };
 
-  //Create, Update Form setting
-  const [createForm] = Form.useForm();
-  const [updateForm] = Form.useForm();
+  const [currentPage, setCurrentPage] = useState(1);
+  const slideCurrent = (value: any) => {
+    const skipValue = (value - 1) * 10;
+    searchParams.set("skip", skipValue.toString());
+    refetch();
+  };
 
-  //Text of Tyography:
+  const {
+    data: customersData,
+    isFetching,
+
+    refetch,
+    isLoading,
+  } = useQuery({
+    queryKey: ["getCustomers"],
+    queryFn: () => {
+      return axiosClient.get(`/customers?${searchParams.toString()}`);
+    },
+    onError: (err: any) => {},
+    retry: false,
+  });
+
+  const { mutate, isLoading: isMutating } = useMutation(handleCustomData, {
+    onSuccess: (data) => {
+      if (timeoutSucess.current) {
+        clearTimeout(timeoutSucess.current);
+      }
+      timeoutSucess.current = setTimeout(() => {
+        refetch();
+      }, 500);
+    },
+    // onSettled(data: any) {
+    //   if (data.ok) {
+    //     message.success("Created Customer Sucessfully!!");
+    //     refetch();
+    //   }
+    //   if (data.response?.data?.message) {
+    //     message.error(data.response?.data?.message);
+    //   }
+    // },
+  });
 
   //Create data
-  const handleCreate = (record: any) => {
+  const handleCreate = async (record: any) => {
+    delete record._id;
     record.createdBy = {
       employeeId: auth.payload._id,
       firstName: auth.payload.firstName,
       lastName: auth.payload.lastName,
     };
+
     record.createdDate = new Date().toISOString();
     if (record.Locked === undefined) {
       record.Locked = false;
     }
 
-    axiosClient
-      .post(WEB_URL, record)
-      .then((res) => {
-        // UPLOAD FILE
-        const { _id } = res.data.result;
-        const formData = new FormData();
-        formData.append("file", file);
+    customizeData.type = "CREATE";
+    customizeData.file = file;
+    customizeData.data = record;
+    mutate(customizeData);
 
-        if (file?.uid && file?.type) {
-          message.loading("On Updating picture on data!!", 1.5);
-          axios
-            .post(`${API_URL}/upload/customers/${_id}/image`, formData)
-            .then((respose) => {
-              message.success("Created Successfully!!", 1.5);
-              createForm.resetFields();
-              setOpenCreate(false);
-              setFile(null);
-
-              setTimeout(() => {
-                // setRefresh((f) => f + 1);
-                refetch();
-              }, 2000);
-            });
-        } else {
-          createForm.resetFields();
-
-          setOpenCreate(false);
-          setFile(null);
-
-          setTimeout(() => {
-            // setRefresh((f) => f + 1);
-            refetch();
-          }, 1000);
-          message.success("Created Successfully!!", 1.5);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        message.error(err.response.data.message);
-      });
+    setOpenCreate(false);
+    createForm.resetFields();
+    setFile(null);
   };
   //Delete a Data
   const handleDelete = (record: any) => {
-    axiosClient
-      .delete(WEB_URL + "/" + record._id)
-      .then((res) => {
-        message.success(" Delete item sucessfully!!", 1.5);
-        // setRefresh((f) => f + 1);
-        refetch();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    customizeData.type = "DELETE";
+    customizeData.id = record._id;
+    mutate(customizeData);
   };
   //Update a Data
   const handleUpdate = (record: any) => {
@@ -151,157 +170,18 @@ function CustomerCRUD() {
       lastName: auth.payload.lastName,
     };
     record.updatedDate = new Date().toISOString();
-
-    record.birthday = record.birthday.toISOString();
-    axiosClient
-      .patch(WEB_URL + "/" + updateId, record)
-      .then((res) => {
-        setOpen(false);
-        setOpenCreate(false);
-        // setRefresh((f) => f + 1);
-        refetch();
-
-        message.success("Updated sucessfully!!", 1.5);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
-  //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
-
-  const [isLocked, setIsLocked] = useState("");
-
-  const onSearchIsLocked = useMemo(
-    () => (value: any) => {
-      if (value) {
-        setIsLocked(value);
-      } else {
-        setIsLocked("");
-      }
-    },
-    []
-  );
-
-  //SEARCH DEPEN ON NAME
-  const [customerEmail, setCustomerEmail] = useState("");
-
-  const onSearchCustomerEmail = useCallback((value: any) => {
-    console.log(value);
-    if (value) {
-      setCustomerEmail(value);
-    } else {
-      setCustomerEmail("");
+    if (record.active === undefined) {
+      record.active = false;
     }
-  }, []);
-
-  //SEARCH DEPEN ON NAME
-  const [customerFirstName, setCustomerFirstName] = useState("");
-
-  const onSearchCustomerFirstName = useCallback((value: any) => {
-    console.log(value);
-    if (value) {
-      setCustomerFirstName(value);
-    } else {
-      setCustomerFirstName("");
+    if (record.isDeleted === undefined) {
+      record.isDeleted = false;
     }
-  }, []);
-
-  //SEARCH DEPEN ON LastName
-  const [customerLastName, setCustomerLastName] = useState("");
-
-  const onSearchCustomerLastName = (record: any) => {
-    if (record) {
-      setCustomerLastName(record);
-    } else {
-      setCustomerLastName("");
-    }
+    customizeData.type = "PATCH";
+    customizeData.id = record._id;
+    customizeData.data = record;
+    mutate(customizeData);
+    setOpen(false);
   };
-
-  //SEARCH DEPEN ON PhoneNumber
-  const [customerPhoneNumber, setCustomerPhoneNumber] = useState("");
-
-  const onSearchCustomerPhoneNumber = (record: any) => {
-    if (record) {
-      setCustomerPhoneNumber(record);
-    } else {
-      setCustomerPhoneNumber("");
-    }
-  };
-
-  //SEARCH DEPEN ON Address
-  const [customerAddress, setCustomerAddress] = useState("");
-
-  const onSearchCustomerAddress = (record: any) => {
-    if (record) {
-      setCustomerAddress(record);
-    } else {
-      setCustomerAddress("");
-    }
-  };
-  //SEARCH DEPEN ON Birthday
-  const [customerBirthdayFrom, setCustomerBirthdayFrom] = useState("");
-  const [customerBirthdayTo, setCustomerBirthdayTo] = useState("");
-
-  const onSearchCustomerBirthday = (record: any) => {
-    const formattedRecord = record.map((date: any) =>
-      dayjs(date).format("YYYY/MM/DD")
-    );
-    if (formattedRecord) {
-      setCustomerBirthdayFrom(formattedRecord[0]);
-      setCustomerBirthdayTo(formattedRecord[1]);
-    } else {
-      setCustomerBirthdayFrom("");
-      setCustomerBirthdayTo("");
-    }
-  };
-
-  //Search on Skip and Limit
-
-  const [skip, setSkip] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const slideCurrent = (value: any) => {
-    setSkip(value * 10 - 10);
-    setCurrentPage(value);
-  };
-  //GET DATA ON FILLTER
-  const URL_FILTER = `${WEB_URL}?${[
-    customerFirstName && `&firstName=${customerFirstName}`,
-    customerLastName && `&lastName=${customerLastName}`,
-    customerEmail && `&email=${customerEmail}`,
-    customerPhoneNumber && `&phoneNumber=${customerPhoneNumber}`,
-    customerAddress && `&address=${customerAddress}`,
-    customerBirthdayFrom && `&birthdayFrom=${customerBirthdayFrom}`,
-    customerBirthdayTo && `&birthdayTo=${customerBirthdayTo}`,
-    isLocked && `&Locked=${isLocked}`,
-    skip && `&skip=${skip}`,
-  ]
-    .filter(Boolean)
-    .join("")}&limit=10`;
-
-  // useEffect(() => {
-  //   axiosClient
-  //     .get(URL_FILTER)
-  //     .then((res) => {
-  //       setCustomersTEST(res.data.results);
-  //       setPages(res.data.amountResults);
-  //       setisLoading(false);
-  //     })
-  //     .catch((err) => console.log(err));
-  // }, [URL_FILTER, refresh]);
-
-  const handleGetMutipleData = () => {
-    return axiosClient.get(URL_FILTER);
-  };
-
-  const {
-    data: customerData,
-    refetch,
-    isLoading,
-  } = useQuery({
-    queryKey: ["getCustomers", URL_FILTER],
-    queryFn: handleGetMutipleData,
-  });
 
   //Setting column
   const columns = [
@@ -310,7 +190,7 @@ function CustomerCRUD() {
       title: () => {
         return (
           <div>
-            {isLocked ? (
+            {searchParams.get("Locked") ? (
               <div className="text-danger">No</div>
             ) : (
               <div className="secondary">No</div>
@@ -325,7 +205,7 @@ function CustomerCRUD() {
           <div>
             <Space>
               {" "}
-              {currentPage === 1 ? index + 1 : index + currentPage * 10 - 9}
+              {index + 1 + (currentPage - 1) * 10}
               {record.Locked === false && (
                 <span style={{ fontSize: "16px", color: "#08c" }}>
                   <CheckCircleOutlined /> Active
@@ -346,14 +226,14 @@ function CustomerCRUD() {
             <div>
               <Select
                 allowClear
-                onClear={() => {
-                  setIsLocked("");
-                }}
                 style={{ width: "125px" }}
                 placeholder="Select a supplier"
                 optionFilterProp="children"
                 showSearch
-                onChange={onSearchIsLocked}
+                onChange={(e) => {
+                  const searchValue = { type: "Locked", value: e };
+                  onSearchItem(searchValue);
+                }}
                 filterOption={(input, option) =>
                   (option?.label ?? "")
                     .toLowerCase()
@@ -385,7 +265,7 @@ function CustomerCRUD() {
       dataIndex: "imageUrl",
       render: (text: any, record: any, index: any) => {
         return (
-          <div>
+          <div className="flex justify-center items-center">
             {record.imageUrl && (
               <img
                 src={`${API_URL}${record.imageUrl}`}
@@ -402,7 +282,7 @@ function CustomerCRUD() {
       title: () => {
         return (
           <div>
-            {customerEmail ? (
+            {searchParams.get("email") ? (
               <div className="text-danger">Email</div>
             ) : (
               <div className="secondary">Email</div>
@@ -417,7 +297,10 @@ function CustomerCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              onSearch={onSearchCustomerEmail}
+              onSearch={(e) => {
+                const searchValue = { type: "email", value: e };
+                onSearchItem(searchValue);
+              }}
               placeholder="Enter email"
               style={{ width: 200 }}
             />
@@ -430,7 +313,7 @@ function CustomerCRUD() {
       title: () => {
         return (
           <div>
-            {customerFirstName ? (
+            {searchParams.get("firstName") ? (
               <div className="text-danger">First name</div>
             ) : (
               <div className="secondary">First name</div>
@@ -446,7 +329,10 @@ function CustomerCRUD() {
             <Search
               allowClear
               placeholder="Enter first name"
-              onSearch={onSearchCustomerFirstName}
+              onSearch={(e) => {
+                const searchValue = { type: "firstName", value: e };
+                onSearchItem(searchValue);
+              }}
               style={{ width: 200 }}
             />
           </div>
@@ -458,7 +344,7 @@ function CustomerCRUD() {
       title: () => {
         return (
           <div>
-            {customerLastName ? (
+            {searchParams.get("lastName") ? (
               <div className="text-danger">Last name</div>
             ) : (
               <div className="secondary">Last name</div>
@@ -473,7 +359,10 @@ function CustomerCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              onSearch={onSearchCustomerLastName}
+              onSearch={(e) => {
+                const searchValue = { type: "lastName", value: e };
+                onSearchItem(searchValue);
+              }}
               placeholder="Enter last name"
               style={{ width: 200 }}
             />
@@ -486,7 +375,7 @@ function CustomerCRUD() {
       title: () => {
         return (
           <div>
-            {customerPhoneNumber ? (
+            {searchParams.get("phoneNumber") ? (
               <div className="text-danger">Phone Number</div>
             ) : (
               <div className="secondary">Phone Number</div>
@@ -500,7 +389,10 @@ function CustomerCRUD() {
         return (
           <div style={{ padding: 8 }}>
             <Search
-              onSearch={onSearchCustomerPhoneNumber}
+              onSearch={(e) => {
+                const searchValue = { type: "phoneNumber", value: e };
+                onSearchItem(searchValue);
+              }}
               allowClear
               placeholder="Enter phone number"
               style={{ width: 200 }}
@@ -514,7 +406,7 @@ function CustomerCRUD() {
       title: () => {
         return (
           <div>
-            {customerAddress ? (
+            {searchParams.get("address") ? (
               <div className="text-danger">Address</div>
             ) : (
               <div className="secondary">Address</div>
@@ -529,7 +421,10 @@ function CustomerCRUD() {
           <div style={{ padding: 8 }}>
             <Search
               allowClear
-              onSearch={onSearchCustomerAddress}
+              onSearch={(e) => {
+                const searchValue = { type: "address", value: e };
+                onSearchItem(searchValue);
+              }}
               placeholder="Enter address"
               style={{ width: 200 }}
             />
@@ -542,7 +437,8 @@ function CustomerCRUD() {
       title: () => {
         return (
           <div>
-            {customerBirthdayFrom || customerBirthdayTo ? (
+            {searchParams.get("birthdayFrom") ||
+            searchParams.get("birthdayTo") ? (
               <div className="text-danger">Birthday</div>
             ) : (
               <div className="secondary">Birthday</div>
@@ -560,17 +456,33 @@ function CustomerCRUD() {
         return (
           <div style={{ padding: 8 }}>
             <RangePicker
-              onCalendarChange={() => {
-                setCustomerBirthdayFrom("");
-                setCustomerBirthdayTo("");
-              }}
               allowClear
               defaultValue={[
                 dayjs("01/01/1900", dateFormat),
                 dayjs("01/01/2023", dateFormat),
               ]}
               format={dateFormat}
-              onChange={onSearchCustomerBirthday}
+              onChange={async (e: any) => {
+                const searchValues: any[] = [
+                  { type: "birthdayFrom", value: null },
+                  { type: "birthdayTo", value: null },
+                ];
+                if (e === null) {
+                  searchValues.forEach((searchValue) => {
+                    onSearchItem(searchValue);
+                  });
+                }
+                const data = await e?.map((date: any) =>
+                  dayjs(date).format("YYYY/MM/DD")
+                );
+
+                searchValues.push({ type: "birthdayFrom", value: data[0] });
+                searchValues.push({ type: "birthdayTo", value: data[1] });
+
+                searchValues.forEach((searchValue) => {
+                  onSearchItem(searchValue);
+                });
+              }}
             />
           </div>
         );
@@ -591,9 +503,7 @@ function CustomerCRUD() {
             icon={<EditOutlined />}
             onClick={() => {
               setOpen(true);
-              setUpdateId(record._id);
-              const birthdayFormat = moment(record.birthday);
-              record.birthday = birthdayFormat;
+              record.birthday = dayjs(record.birthday);
               updateForm.setFieldsValue(record);
             }}
           ></Button>
@@ -644,15 +554,15 @@ function CustomerCRUD() {
             <Space direction="vertical">
               <Button
                 style={{ width: "150px" }}
-                onClick={() => {
-                  setCustomerEmail("");
-                  setCustomerFirstName("");
-                  setCustomerLastName("");
-                  setCustomerPhoneNumber("");
-                  setCustomerAddress("");
-                  setCustomerBirthdayFrom("");
-                  setCustomerBirthdayTo("");
-                  setIsLocked("");
+                onClick={async () => {
+                  const arrValue: any = [];
+                  await searchParams.forEach((value, key) => {
+                    arrValue.push({ value: "", type: key });
+                  });
+
+                  await arrValue.map(async (item: any) => {
+                    await onSearchItem(item);
+                  });
                 }}
                 icon={<ClearOutlined />}
               >
@@ -676,10 +586,8 @@ function CustomerCRUD() {
 
   return (
     <div>
-      {/* Modal Create A Customers */}
       <Modal
-        okType="dashed"
-        title={`Create Customers `}
+        title="Create Customer"
         open={openCreate}
         onCancel={() => {
           setOpenCreate(false);
@@ -687,333 +595,92 @@ function CustomerCRUD() {
         onOk={() => {
           createForm.submit();
         }}
+        okType="dashed"
         okText="Submit"
       >
-        <div className="container ">
-          <Form form={createForm} name="createForm" onFinish={handleCreate}>
-            <FormItem
-              labelCol={{
-                span: 7,
+        <Form form={createForm} name="createForm" onFinish={handleCreate}>
+          <CustomerForm />
+          <Form.Item
+            labelCol={{
+              span: 7,
+            }}
+            wrapperCol={{
+              span: 16,
+            }}
+            label="Hình minh họa"
+            name="file"
+          >
+            <Upload
+              maxCount={1}
+              listType="picture-card"
+              showUploadList={true}
+              beforeUpload={(file) => {
+                setFile(file);
+                return false;
               }}
-              wrapperCol={{
-                span: 16,
+              onRemove={() => {
+                setFile("");
               }}
-              hasFeedback
-              label="Email"
-              name="email"
-              rules={[
-                {
-                  type: "email",
-                  message: "Please enter a valid email address!",
-                },
-                { required: true, message: "Please input Email!" },
-              ]}
             >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="First name"
-              name="firstName"
-              rules={[{ required: true, message: "Please input First name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Last name"
-              name="lastName"
-              rules={[{ required: true, message: "Please input Last name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Phone number"
-              name="phoneNumber"
-              rules={[
-                { required: true, message: "Please input Phone number!" },
-              ]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Address"
-              name="address"
-              rules={[{ required: true, message: "Please input Address!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Password"
-              name="password"
-              rules={[{ required: true, message: "Please input Address!" }]}
-            >
-              <Input.Password />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Locked"
-              name="Locked"
-              valuePropName="checked"
-            >
-              <Switch />
-            </FormItem>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Note"
-              name="note"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              label="Birthday"
-              name="birthday"
-              rules={[{ required: true, message: "Please input Birthday!" }]}
-            >
-              <DatePicker placement="bottomLeft" format="DD/MM/YYYY" />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 7,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              label="Hình minh họa"
-              name="file"
-            >
-              <Upload
-                maxCount={1}
-                listType="picture-card"
-                showUploadList={true}
-                beforeUpload={(file) => {
-                  setFile(file);
-                  return false;
-                }}
-                onRemove={() => {
-                  setFile("");
-                }}
-              >
-                {!file ? (
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Upload</div>
-                  </div>
-                ) : (
-                  ""
-                )}
-              </Upload>
-            </Form.Item>
-          </Form>
-        </div>
+              {!file ? (
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </div>
+              ) : (
+                ""
+              )}
+            </Upload>
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* List and function  */}
 
-      <div>
-        <Table
-          // loading={!customersTEST ? true : false}
-          loading={isLoading}
-          rowKey="_id"
-          columns={columns}
-          dataSource={customerData?.data?.results}
-          pagination={false}
-          scroll={{ x: "max-content", y: 610 }}
-          rowClassName={(record) => {
-            return record.Locked === true
-              ? "text-danger bg-success-subtle"
-              : "";
-          }}
-        />
-        <Pagination
-          className="container text-end"
-          onChange={(e) => slideCurrent(e)}
-          defaultCurrent={1}
-          total={customerData?.data?.amountResults}
-        />
-      </div>
+      <Table
+        bordered
+        loading={isLoading || isFetching || isMutating}
+        rowKey="_id"
+        columns={columns}
+        dataSource={customersData?.data?.results}
+        pagination={{
+          // pageSize: 10,
+          onChange: (e) => {
+            slideCurrent(e);
+            setCurrentPage(e);
+          },
+          total: customersData?.data?.amountResults,
 
-      {/* Modal confirm Delte */}
+          showTotal: (total, range) =>
+            `Showing ${range[0]}-${range[1]} of ${total} items`,
+
+          size: "small",
+          current: currentPage,
+        }}
+        scroll={{ x: "max-content", y: 630 }}
+        rowClassName={(record) => {
+          if (record.active === false && record.isDeleted === false) {
+            return "bg-dark-subtle";
+          } else if (record.isDeleted) {
+            return "text-danger bg-success-subtle";
+          } else {
+            return "";
+          }
+        }}
+      />
 
       {/* Model Update */}
       <Modal
-        okType="dashed"
         open={open}
-        title="Update Customer"
-        onCancel={() => {
-          setOpen(false);
-        }}
+        title="Update Supplier"
+        onCancel={() => setOpen(false)}
         onOk={() => {
           updateForm.submit();
         }}
+        okType="dashed"
       >
         <Form form={updateForm} name="updateForm" onFinish={handleUpdate}>
-          <div className="row">
-            <FormItem
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Email"
-              name="email"
-              rules={[{ required: true, message: "Please input Email!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="First name"
-              name="firstName"
-              rules={[{ required: true, message: "Please input First name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Last name"
-              name="lastName"
-              rules={[{ required: true, message: "Please input Last name!" }]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Phone number"
-              name="phoneNumber"
-              rules={[
-                { required: true, message: "Please input Phone number!" },
-              ]}
-            >
-              <Input />
-            </FormItem>
-            <FormItem
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Address"
-              name="address"
-              rules={[{ required: true, message: "Please input Address!" }]}
-            >
-              <Input />
-            </FormItem>
-
-            <FormItem
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Locked"
-              name="Locked"
-              valuePropName="checked"
-            >
-              <Switch />
-            </FormItem>
-            <Form.Item
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              hasFeedback
-              label="Note"
-              name="note"
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              labelCol={{
-                span: 8,
-              }}
-              wrapperCol={{
-                span: 16,
-              }}
-              label="Birthday"
-              name="birthday"
-              rules={[{ required: true, message: "Please input Birthday!" }]}
-            >
-              <DatePicker placement="bottomLeft" format="DD/MM/YYYY" />
-            </Form.Item>
-          </div>
+          <CustomerForm classHidden={"hidden"} />
         </Form>
       </Modal>
     </div>

@@ -46,9 +46,10 @@ axiosClient.interceptors.response.use(
     }
     if (
       error?.response?.status === 401 &&
-      error?.response?.data?.message === "refreshToken is not a valid Token"
+      (error?.response?.data?.message === "refreshToken is not a valid Token" ||
+        error?.response?.data?.message === "refreshToken and id's not match!")
     ) {
-      window.localStorage.clear();
+      localStorage.clear();
       setTimeout(() => {
         message.info("Please login !!!", 1.5);
 

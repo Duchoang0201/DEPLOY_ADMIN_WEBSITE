@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Login from "./pages/Auth/Login";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout, Button, theme, Divider, message } from "antd";
@@ -12,7 +12,6 @@ import NotFoundPage from "./pages/NotFoundPage";
 import MainMenu from "./components/MainMenu";
 import HomePage from "./pages/HomePage";
 import CategoryCRUD from "./pages/Management/categoryCRUD";
-import ProductsCRUD from "./pages/Management/ProductsCRUD";
 import CustomerCRUD from "./pages/Management/CustomerCRUD";
 import SupperliersCRUD from "./pages/Management/SupperliersCRUD";
 import Information from "./pages/Account/Information";
@@ -27,6 +26,7 @@ import { axiosClient } from "./libraries/axiosClient";
 import { useAuthStore } from "./hooks/useAuthStore";
 import MessagesDev from "./pages/Account/Messages/MessagesDev";
 import { queryClient } from "./libraries/react-query";
+import ProductCRUD from "./pages/Management/ProductsCRUD";
 numeral.locale("vi");
 
 const { Header, Sider, Content } = Layout;
@@ -193,7 +193,7 @@ const App: React.FC = () => {
                       )}
                       <Route
                         path="/management/products"
-                        element={<ProductsCRUD />}
+                        element={<ProductCRUD />}
                       />
                       <Route path="/function/slides" element={<SlidesCRUD />} />
                       <Route

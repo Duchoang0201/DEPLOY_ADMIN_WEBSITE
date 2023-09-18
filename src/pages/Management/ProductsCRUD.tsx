@@ -5,160 +5,192 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusCircleOutlined,
+  PlusOutlined,
   SearchOutlined,
   UnorderedListOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
 import {
   Button,
-  Card,
-  Checkbox,
   Form,
-  Input,
-  InputNumber,
   message,
   Modal,
-  Pagination,
   Popconfirm,
   Select,
   Space,
   Table,
-  Image,
   Upload,
+  InputNumber,
+  Card,
+  Image,
 } from "antd";
-import axios from "axios";
-import { API_URL } from "../../constants/URLS";
-
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { axiosClient } from "../../libraries/axiosClient";
+import { useEffect, useRef, useState } from "react";
 import Search from "antd/es/input/Search";
 import { useAuthStore } from "../../hooks/useAuthStore";
-import { useQuery } from "@tanstack/react-query";
-import { axiosClient } from "../../libraries/axiosClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import { handleCustomData } from "../../util/handleCustomData";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 
-interface ISupplier {
-  name: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-}
+import { functionValidate } from "../../validation/FunctionValidate";
+import { customeDataValidate } from "../../validation/customDataValidate";
+import { API_URL } from "../../constants/URLS";
+import ProductForm from "../Form/ProductForm";
+import axios from "axios";
+dayjs.extend(customParseFormat);
+function ProductCRUD() {
+  const customizeData: any = {
+    collection: "products",
+  };
 
-function ProductsCRUD() {
-  const URL_ENV = process.env.REACT_APP_BASE_URL || "http://localhost:9000";
+  const [files, setFiles] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  searchParams.set("limit", "10");
 
-  const [refresh, setRefresh] = useState(0);
+  const timeoutSucess = useRef<any>();
+  const [createForm] = Form.useForm();
+  const [updateForm] = Form.useForm();
   const { auth } = useAuthStore((state: any) => state);
-  const [openDetailPicture, setOpenDetailPicture] = useState(false);
 
-  const [file, setFile] = useState<any>();
-
-  let WEB_URL = `/products`;
-
-  // MODAL:
-  // Modal open Create:
   const [openCreate, setOpenCreate] = useState(false);
 
   // Modal open Update:
   const [open, setOpen] = useState(false);
+  const [openDetailPicture, setOpenDetailPicture] = useState(false);
 
-  //Delete Item
-  const [deleteItem, setDeleteItem] = useState<ISupplier>();
-
-  //For fillter:
-
-  // Change fillter (f=> f+1)
-  // const [supplierFilter, setSupplierFilter] = useState(WEB_URL);
-
+  const [deleteItem, setDeleteItem] = useState<any>();
   const [updateId, setUpdateId] = useState<any>();
 
-  //Create, Update Form setting
-  const [createForm] = Form.useForm();
-  const [updateForm] = Form.useForm();
-  const [inforPrice] = Form.useForm();
-  const [inforDiscount] = Form.useForm();
-  const [inforStock] = Form.useForm();
+  const onSearchItem = async (record: any) => {
+    searchParams.set("limit", "10");
+    searchParams.set("skip", "0");
+    try {
+      if (record.type && record.value) {
+        searchParams.set(record.type, record.value);
 
-  //TableLoading
+        const res = await customeDataValidate({
+          collection: "Product",
+          searchParams,
+        });
+
+        const result: any = await functionValidate(res);
+
+        if (result.oke) {
+          await refetch();
+        } else {
+          message.error(result.message);
+          searchParams.delete(record.type);
+        }
+      } else if (
+        record.type &&
+        (record.value === "" ||
+          record.value === undefined ||
+          record.value === null)
+      ) {
+        searchParams.delete(record.type);
+        await refetch();
+      }
+      setCurrentPage(1);
+    } catch (error: any) {
+      message.error(error.message || error.reponse.data.message);
+    }
+  };
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const slideCurrent = (value: any) => {
+    const skipValue = (value - 1) * 10;
+    searchParams.set("skip", skipValue.toString());
+    refetch();
+  };
+
+  /// GET PRODUCTS
+  const {
+    data: productsData,
+    isFetching,
+
+    refetch,
+    isLoading,
+  } = useQuery({
+    queryKey: ["getProducts", files],
+    queryFn: () => {
+      return axiosClient.get(`/products?${searchParams.toString()}`);
+    },
+    onError: (err: any) => {},
+    retry: false,
+  });
 
   //GET CATEGORIES
   const { data: categoriesData } = useQuery({
     queryKey: ["getCategories"],
     queryFn: () => {
-      return axiosClient.get("/categories");
+      return axiosClient.get(`/categories`);
     },
+    onError: (err: any) => {},
+    retry: false,
   });
-
-  //GET CATEGORIES
-
+  //GET SUPPLIERS
   const { data: suppliersData } = useQuery({
     queryKey: ["getSuppliers"],
     queryFn: () => {
-      return axiosClient.get("/suppliers");
+      return axiosClient.get(`/suppliers`);
     },
+    onError: (err: any) => {},
+    retry: false,
   });
-  //Text of Tyography:
 
-  //Handle Create a Data
-  const handleCreate = (record: any) => {
+  const { mutate, isLoading: isMutating } = useMutation(handleCustomData, {
+    onSuccess: (data) => {
+      if (timeoutSucess.current) {
+        clearTimeout(timeoutSucess.current);
+      }
+      timeoutSucess.current = setTimeout(() => {
+        refetch();
+        message.success("Created Customer Sucessfully!!");
+      }, 500);
+    },
+    // onSettled(data: any) {
+    //   if (data.ok) {
+    //     refetch();
+    //     setFiles(null);
+    //   }
+    //   if (data.response?.data?.message) {
+    //     message.error(data.response?.data?.message);
+    //   }
+    // },
+  });
+
+  //Create data
+  const handleCreate = async (record: any) => {
+    delete record._id;
     record.createdBy = {
       employeeId: auth.payload._id,
       firstName: auth.payload.firstName,
       lastName: auth.payload.lastName,
     };
+    record.isDeleted = false;
     record.createdDate = new Date().toISOString();
     if (record.active === undefined) {
       record.active = false;
     }
-    record.isDeleted = false;
-    axiosClient
-      .post(WEB_URL, record)
-      .then((res) => {
-        // UPLOAD FILE
-        if (file) {
-          const { _id } = res.data.result;
 
-          const formData = new FormData();
-          formData.append("file", file);
+    customizeData.type = "CREATE";
+    customizeData.file = files;
 
-          axios
-            .post(`${API_URL}/upload/products/${_id}/image`, formData)
-            .then((respose) => {
-              message.success("Create a product successFully!!", 1.5);
-              createForm.resetFields();
-              // setRefresh((f) => f + 1);
-              refetch();
-              setOpen(false);
-              setFile(null);
-            })
-            .catch((err) => {
-              message.error("Upload file bị lỗi!");
-            });
-        } else {
-          message.success("Create a product successFully!!", 1.5);
-        }
-      })
-      .catch((err: any) => {
-        console.log(err);
-      });
+    customizeData.data = record;
+    mutate(customizeData);
+
+    setOpenCreate(false);
+    createForm.resetFields();
   };
-
-  //handle Delete Data
-  const handleDelete = useCallback(
-    (record: any) => {
-      axiosClient
-        .delete(WEB_URL + "/" + record._id)
-        .then((res) => {
-          // setRefresh((f) => f + 1);
-          refetch();
-          message.success("Delete a product successFully!!", 3);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    },
-    [WEB_URL]
-  );
-
-  //Update a data
+  //Delete a Data
+  const handleDelete = (record: any) => {
+    customizeData.type = "DELETE";
+    customizeData.id = record._id;
+    mutate(customizeData);
+  };
+  //Update a Data
   const handleUpdate = (record: any) => {
     record.updatedBy = {
       employeeId: auth.payload._id,
@@ -172,187 +204,21 @@ function ProductsCRUD() {
     if (record.isDeleted === undefined) {
       record.isDeleted = false;
     }
-    axiosClient
-      .patch(WEB_URL + "/" + updateId._id, record)
-      .then((res) => {
-        // setRefresh((f) => f + 1);
-        refetch();
-        message.success(`Update product ${record.name} successFully!!`, 3);
-        setOpen(false);
-      })
-      .catch((err) => {
-        message.error(err.response.data.message);
-      });
+    customizeData.type = "PATCH";
+    customizeData.id = record._id;
+    customizeData.data = record;
+    mutate(customizeData);
+    setOpen(false);
   };
 
-  //SEARCH ISDELETE ITEM
-
-  //SEARCH ISDELETE , ACTIVE, UNACTIVE ITEM
-
-  const [isDelete, setIsDelete] = useState("");
-  const [isActive, setIsActive] = useState("");
-  const onSearchIsDelete = useCallback((value: any) => {
-    if (value === "active") {
-      setIsActive("true");
-      setIsDelete("");
-    }
-    if (value === "unActive") {
-      setIsActive("false");
-      setIsDelete("");
-    }
-    if (value === "Deleted") {
-      setIsDelete("true");
-      setIsActive("");
-    }
-    if (value !== "active" && value !== "unActive" && value !== "Deleted") {
-      setIsActive("");
-      setIsDelete("");
-    }
-  }, []);
-
-  //Search on CategoryID
-  const [categoryId, setCategoryId] = useState("");
-
-  const onSearchCategory = useMemo(() => {
-    return (value: any) => {
-      if (value) {
-        setCategoryId(value);
-      } else {
-        setCategoryId("");
-      }
-    };
-  }, []);
-
-  //Search on SupplierID
-  const [supplierId, setSupplierId] = useState("");
-  const onSearchSupplier = useMemo(() => {
-    return (value: any) => {
-      if (value) {
-        setSupplierId(value);
-      } else {
-        setSupplierId("");
-      }
-    };
-  }, []);
-
-  //SEARCH DEPEN ON NAME
-  const [productName, setProductName] = useState("");
-
-  const onSearchProductName = useMemo(() => {
-    return (record: any) => {
-      setProductName(record);
-    };
-  }, []);
-
-  //Search on Price
-
-  const [fromPrice, setFromPrice] = useState("");
-  const [toPrice, setToPrice] = useState("");
-
-  const submitSearchPrice = useMemo(() => {
-    return (value: any) => {
-      setFromPrice(value.fromPrice ? value.fromPrice : "");
-      setToPrice(value.toPrice ? value.toPrice : "");
-    };
-  }, []);
-  //Search on Discount
-
-  const [fromDiscount, setFromDiscount] = useState("");
-  const [toDiscount, setToDiscount] = useState("");
-
-  const submitSearchDiscount = useMemo(() => {
-    return (value: any) => {
-      setFromDiscount(value.fromDiscount ? value.fromDiscount : "");
-      setToDiscount(value.toDiscount ? value.toDiscount : "");
-    };
-  }, []);
-
-  //Search on Stock
-
-  const [fromStock, setFromStock] = useState("");
-  const [toStock, setToStock] = useState("");
-
-  const submitSearchStock = useMemo(() => {
-    return (value: any) => {
-      setFromStock(value.fromStock ? value.fromStock : "");
-      setToStock(value.toStock ? value.toStock : "");
-    };
-  }, []);
-  //Search on Skip and Limit
-
-  const [skip, setSkip] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const slideCurrent = (value: any) => {
-    setSkip(value * 10 - 10);
-    setCurrentPage(value);
-  };
-  //Clear fillter
-  const handleClearFillter = () => {
-    setSupplierId("");
-    setProductName("");
-    setCategoryId("");
-    //Price
-    setFromPrice("");
-    setToPrice("");
-    inforPrice.resetFields();
-    //Discount
-    setFromDiscount("");
-    setToDiscount("");
-    inforDiscount.resetFields();
-    //Stock
-    setFromStock("");
-    setToStock("");
-    inforStock.resetFields();
-    setIsActive("");
-    setIsDelete("");
-  };
-  //GET DATA ON FILLTER
-  const queryParams = [
-    productName && `productName=${productName}`,
-    supplierId && `supplierId=${supplierId}`,
-    categoryId && `categoryId=${categoryId}`,
-    fromPrice && `fromPrice=${fromPrice}`,
-    toPrice && `toPrice=${toPrice}`,
-    fromDiscount && `fromDiscount=${fromDiscount}`,
-    toDiscount && `toDiscount=${toDiscount}`,
-    fromStock && `fromStock=${fromStock}`,
-    toStock && `toStock=${toStock}`,
-    skip && `skip=${skip}`,
-    isActive && `active=${isActive}`,
-    isDelete && `isDeleted=${isDelete}`,
-  ]
-    .filter(Boolean)
-    .join("&");
-
-  const URL_FILTER = `/products?${queryParams}&limit=10`;
-
-  const {
-    data: productsData,
-    refetch,
-    isLoading,
-  } = useQuery({
-    queryKey: ["getProducts", URL_FILTER],
-    queryFn: () => {
-      return axiosClient.get(URL_FILTER);
-    },
-  });
-
-  // KEEP UPDATE ID:
-
-  useEffect(() => {
-    // Check if the selected order exists in the updated dataResource
-    const updatedSelectedOrder = productsData?.data?.results.find(
-      (product: any) => product._id === updateId?._id
-    );
-    setUpdateId(updatedSelectedOrder || null);
-  }, [productsData?.data?.results, updateId]);
+  //Setting column
   const columns = [
     //No
     {
       title: () => {
         return (
           <div>
-            {isActive || isDelete ? (
+            {searchParams.get("active") || searchParams.get("isDeleted") ? (
               <div className="text-danger">No</div>
             ) : (
               <div className="secondary">No</div>
@@ -366,7 +232,7 @@ function ProductsCRUD() {
         return (
           <div>
             <Space>
-              {currentPage === 1 ? index + 1 : index + currentPage * 10 - 9}
+              {index + 1 + (currentPage - 1) * 10}
               {record.active === true && !record.isDeleted && (
                 <span style={{ fontSize: "16px", color: "#08c" }}>
                   <CheckCircleOutlined /> Active
@@ -400,13 +266,33 @@ function ProductsCRUD() {
               <Select
                 allowClear
                 onClear={() => {
-                  setIsDelete("");
+                  searchParams.delete("active");
+                  searchParams.delete("isDeleted");
+                  refetch();
                 }}
                 style={{ width: "125px" }}
-                placeholder="Select a supplier"
+                placeholder="Select "
                 optionFilterProp="children"
                 showSearch
-                onChange={onSearchIsDelete}
+                onChange={(e) => {
+                  let searchValue: any = {};
+                  if (e === "active") {
+                    searchValue.type = "active";
+                    searchValue.value = "true";
+                  }
+                  if (e === "unActive") {
+                    searchValue = {};
+                    searchValue.type = "active";
+                    searchValue.value = "false";
+                  }
+                  if (e === "isDeleted") {
+                    searchValue = {};
+
+                    searchValue.type = "isDeleted";
+                    searchValue.value = "true";
+                  }
+                  onSearchItem(searchValue);
+                }}
                 filterOption={(input, option) =>
                   (option?.label ?? "")
                     .toLowerCase()
@@ -435,20 +321,22 @@ function ProductsCRUD() {
     },
     //IMAGE
     {
-      width: "1%",
+      width: "2%",
 
       title: "Picture",
       key: "imageUrl",
       dataIndex: "imageUrl",
       render: (text: any, record: any, index: any) => {
         return (
-          <div>
-            <div className="d-flex justify-content-between">
+          <div className=" flex flex-row justify-between items-center">
+            <div>
               <img
-                src={`${URL_ENV}${record.imageUrl}`}
+                src={`${API_URL}${record.imageUrl}`}
                 style={{ height: 60 }}
                 alt="record.imageUrl"
               />
+            </div>
+            <div>
               <Button
                 className="border-none"
                 onClick={() => {
@@ -469,7 +357,7 @@ function ProductsCRUD() {
       title: () => {
         return (
           <div>
-            {categoryId ? (
+            {searchParams.get("categoryId") ? (
               <div className="text-danger">Category</div>
             ) : (
               <div className="secondary">Category</div>
@@ -480,17 +368,18 @@ function ProductsCRUD() {
       dataIndex: ["category", "name"],
       key: "category",
 
-      filterDropdown: (clearFilters: any) => {
+      filterDropdown: () => {
         return (
           <div style={{ width: "150px" }}>
             <Select
               allowClear
-              autoClearSearchValue={!categoryId ? true : false}
               showSearch
               style={{ width: "100%" }}
               placeholder="Select a product"
-              optionFilterProp="children"
-              onChange={onSearchCategory}
+              onChange={(e: any) => {
+                const valueSearch = { type: "categoryId", value: e };
+                onSearchItem(valueSearch);
+              }}
               filterOption={(input: any, option: any) =>
                 (option?.label ?? "")
                   .toLowerCase()
@@ -514,7 +403,7 @@ function ProductsCRUD() {
       title: () => {
         return (
           <div>
-            {supplierId ? (
+            {searchParams.get("supplierId") ? (
               <div className="text-danger">Supplier</div>
             ) : (
               <div className="secondary">Supplier</div>
@@ -530,13 +419,12 @@ function ProductsCRUD() {
             <div>
               <Select
                 allowClear
-                onClear={() => {
-                  setSupplierId("");
-                }}
                 style={{ width: "125px" }}
                 placeholder="Select a supplier"
-                optionFilterProp="children"
-                onChange={onSearchSupplier}
+                onChange={(e: any) => {
+                  const valueSearch = { type: "supplierId", value: e };
+                  onSearchItem(valueSearch);
+                }}
                 showSearch
                 filterOption={(input: any, option: any) =>
                   (option?.label ?? "")
@@ -566,7 +454,7 @@ function ProductsCRUD() {
       title: () => {
         return (
           <div>
-            {productName ? (
+            {searchParams.get("productName") ? (
               <div className="text-danger">Product Name</div>
             ) : (
               <div className="secondary">Product Name</div>
@@ -582,7 +470,10 @@ function ProductsCRUD() {
             <Search
               allowClear
               placeholder="input search text"
-              onSearch={onSearchProductName}
+              onSearch={(e: any) => {
+                const valueSearch = { type: "productName", value: e };
+                onSearchItem(valueSearch);
+              }}
               style={{ width: 200 }}
             />
           </div>
@@ -596,7 +487,7 @@ function ProductsCRUD() {
       title: () => {
         return (
           <div>
-            {fromPrice || toPrice ? (
+            {searchParams.get("fromPrice") || searchParams.get("toPrice") ? (
               <div className="text-danger">Price</div>
             ) : (
               <div className="secondary">Price</div>
@@ -616,26 +507,51 @@ function ProductsCRUD() {
       filterDropdown: () => {
         return (
           <Form
-            form={inforPrice}
             name="inforPrice"
-            onFinish={submitSearchPrice}
-            style={{
-              padding: "5px",
-              width: fromPrice || toPrice ? "350px" : "300px",
-              height: "50px",
+            onFinish={(e: any) => {
+              const valueSearch = [
+                { type: "fromPrice", value: e.fromPrice },
+                { type: "toPrice", value: e.toPrice },
+              ];
+              valueSearch?.map((item: any) => onSearchItem(item));
             }}
+            className=" px-2 py-2 h-12"
           >
             <Space>
-              <Form.Item hasFeedback label="from" name="fromPrice">
-                <InputNumber placeholder="Enter From" min={1} />
+              <Form.Item
+                // hasFeedback
+                label="from"
+                name="fromPrice"
+              >
+                <InputNumber
+                  placeholder="Enter From"
+                  min={1}
+                  className="w-28"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                  }
+                  parser={(value: any) =>
+                    value!.replace(/\s?d|(\.*)/g, "").replace(/\./g, "")
+                  }
+                />
               </Form.Item>
-              <Form.Item hasFeedback label="to" name="toPrice">
-                <InputNumber placeholder="Enter to" min={1} />
+              <Form.Item label="to" name="toPrice">
+                <InputNumber
+                  placeholder="Enter to"
+                  min={1}
+                  className="w-28"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                  }
+                  parser={(value: any) =>
+                    value!.replace(/\s?d|(\.*)/g, "").replace(/\./g, "")
+                  }
+                />
               </Form.Item>
               <span>
                 <Form.Item>
                   <Button
-                    style={{ width: "30px", right: "-10px" }}
+                    // style={{ width: "30px", right: "-10px" }}
                     type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
@@ -643,15 +559,15 @@ function ProductsCRUD() {
                 </Form.Item>
               </span>
               <span>
-                {fromPrice || toPrice ? (
+                {searchParams.get("fromPrice") ||
+                searchParams.get("toPrice") ? (
                   <Form.Item>
                     <Button
-                      style={{ width: "30px", right: "-8px" }}
                       type="dashed"
                       onClick={() => {
-                        // setFromPrice("");
-                        // setToPrice("");
-                        inforPrice.resetFields();
+                        searchParams.delete("fromPrice");
+                        searchParams.delete("toPrice");
+                        refetch();
                       }}
                       icon={<ClearOutlined />}
                     />
@@ -665,7 +581,6 @@ function ProductsCRUD() {
         );
       },
     },
-
     //Stock
     {
       width: "1%",
@@ -673,7 +588,7 @@ function ProductsCRUD() {
       title: () => {
         return (
           <div>
-            {fromStock || toStock ? (
+            {searchParams.get("fromStock") || searchParams.get("toStock") ? (
               <div className="text-danger">Stock</div>
             ) : (
               <div className="secondary">Stock</div>
@@ -683,29 +598,56 @@ function ProductsCRUD() {
       },
       dataIndex: "stock",
       key: "stock",
+      render: (text: any, record: any) => {
+        return <div>{text}</div>;
+      },
       filterDropdown: () => {
         return (
           <Form
-            form={inforStock}
-            name="inforStock"
-            onFinish={submitSearchStock}
-            style={{
-              padding: "5px",
-              width: fromStock || toStock ? "350px" : "300px",
-              height: "50px",
+            name="infoStock"
+            onFinish={(e: any) => {
+              const valueSearch = [
+                { type: "fromStock", value: e.fromStock },
+                { type: "toStock", value: e.toStock },
+              ];
+              valueSearch.map((item) => onSearchItem(item));
             }}
+            className=" px-2 py-2 h-12"
           >
             <Space>
-              <Form.Item hasFeedback label="from" name="fromStock">
-                <InputNumber min={1} placeholder="Enter From" />
+              <Form.Item
+                // hasFeedback
+                label="from"
+                name="fromStock"
+              >
+                <InputNumber
+                  placeholder="Enter From"
+                  min={1}
+                  className="w-28"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                  }
+                  parser={(value: any) =>
+                    value!.replace(/\s?d|(\.*)/g, "").replace(/\./g, "")
+                  }
+                />
               </Form.Item>
-              <Form.Item hasFeedback label="to" name="toStock">
-                <InputNumber min={1} placeholder="Enter To" />
+              <Form.Item label="to" name="toStock">
+                <InputNumber
+                  placeholder="Enter to"
+                  min={1}
+                  className="w-28"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                  }
+                  parser={(value: any) =>
+                    value!.replace(/\s?d|(\.*)/g, "").replace(/\./g, "")
+                  }
+                />
               </Form.Item>
-              <span style={{ width: "20%" }}>
+              <span>
                 <Form.Item>
                   <Button
-                    style={{ width: "30px", right: "-4px" }}
                     type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
@@ -713,15 +655,15 @@ function ProductsCRUD() {
                 </Form.Item>
               </span>
               <span>
-                {fromStock || toStock ? (
+                {searchParams.get("fromStock") ||
+                searchParams.get("toStock") ? (
                   <Form.Item>
                     <Button
-                      style={{ width: "30px", right: "-8px" }}
                       type="dashed"
                       onClick={() => {
-                        setFromStock("");
-                        setToStock("");
-                        inforStock.resetFields();
+                        searchParams.delete("fromStock");
+                        searchParams.delete("toStock");
+                        refetch();
                       }}
                       icon={<ClearOutlined />}
                     />
@@ -735,6 +677,7 @@ function ProductsCRUD() {
         );
       },
     },
+
     //Discount
     {
       width: "2%",
@@ -742,7 +685,8 @@ function ProductsCRUD() {
       title: () => {
         return (
           <div>
-            {fromDiscount || toDiscount ? (
+            {searchParams.get("fromDiscount") ||
+            searchParams.get("toDiscount") ? (
               <div className="text-danger">Discount</div>
             ) : (
               <div className="secondary">Discount</div>
@@ -752,29 +696,36 @@ function ProductsCRUD() {
       },
       dataIndex: "discount",
       key: "discount",
+      render: (text: any, record: any) => {
+        return <div>{text}</div>;
+      },
       filterDropdown: () => {
         return (
           <Form
-            form={inforDiscount}
-            name="inforDiscount"
-            onFinish={submitSearchDiscount}
-            style={{
-              padding: "5px",
-              width: fromDiscount || toDiscount ? "350px" : "300px",
-              height: "50px",
+            name="infoDiscount"
+            onFinish={(e: any) => {
+              const valueSearch = [
+                { type: "fromDiscount", value: e.fromDiscount },
+                { type: "toDiscount", value: e.toDiscount },
+              ];
+              valueSearch.map((item) => onSearchItem(item));
             }}
+            className=" px-2 py-2 h-12"
           >
             <Space>
-              <Form.Item hasFeedback label="from" name="fromDiscount">
-                <InputNumber placeholder="Enter From" min={1} />
+              <Form.Item label="from" name="fromDiscount">
+                <InputNumber
+                  placeholder="Enter From"
+                  min={1}
+                  className="w-28"
+                />
               </Form.Item>
-              <Form.Item hasFeedback label="to" name="toDiscount">
-                <InputNumber placeholder="Enter To" min={1} />
+              <Form.Item label="to" name="toDiscount">
+                <InputNumber placeholder="Enter to" min={1} className="w-28" />
               </Form.Item>
-              <span style={{ width: "20%" }}>
+              <span>
                 <Form.Item>
                   <Button
-                    style={{ width: "30px", right: "-10px" }}
                     type="dashed"
                     htmlType="submit"
                     icon={<SearchOutlined />}
@@ -782,15 +733,15 @@ function ProductsCRUD() {
                 </Form.Item>
               </span>
               <span>
-                {fromDiscount || toDiscount ? (
+                {searchParams.get("fromDiscount") ||
+                searchParams.get("toDiscount") ? (
                   <Form.Item>
                     <Button
-                      style={{ width: "30px", right: "-8px" }}
                       type="dashed"
                       onClick={() => {
-                        setFromDiscount("");
-                        setToDiscount("");
-                        inforDiscount.resetFields();
+                        searchParams.delete("fromDiscount");
+                        searchParams.delete("toDiscount");
+                        refetch();
                       }}
                       icon={<ClearOutlined />}
                     />
@@ -836,33 +787,9 @@ function ProductsCRUD() {
             icon={<EditOutlined />}
             onClick={() => {
               setOpen(true);
-              setUpdateId(record);
               updateForm.setFieldsValue(record);
             }}
           />
-          <Upload
-            showUploadList={false}
-            name="file"
-            action={`${URL_ENV}/upload/products/${record._id}/images`}
-            headers={{ authorization: "authorization-text" }}
-            onChange={(info) => {
-              if (info.file.status !== "uploading") {
-                console.log(info.file);
-              }
-
-              if (info.file.status === "done") {
-                message.success(`${info.file.name} file uploaded successfully`);
-
-                setTimeout(() => {
-                  setRefresh(refresh + 1);
-                }, 1000);
-              } else if (info.file.status === "error") {
-                message.error(`${info.file.name} file upload failed.`);
-              }
-            }}
-          >
-            <Button icon={<UploadOutlined />} />
-          </Upload>
         </Space>
       ),
       filterDropdown: () => {
@@ -871,7 +798,16 @@ function ProductsCRUD() {
             <Space direction="vertical">
               <Button
                 style={{ width: "150px" }}
-                onClick={handleClearFillter}
+                onClick={async () => {
+                  const arrValue: any = [];
+                  await searchParams.forEach((value, key) => {
+                    arrValue.push({ value: "", type: key });
+                  });
+
+                  await arrValue.map(async (item: any) => {
+                    await onSearchItem(item);
+                  });
+                }}
                 icon={<ClearOutlined />}
               >
                 Clear filter
@@ -891,242 +827,66 @@ function ProductsCRUD() {
       },
     },
   ];
+  // KEEP UPDATE ID:
+
+  useEffect(() => {
+    // Check if the selected order exists in the updated dataResource
+    const updatedSelectedOrder = productsData?.data?.results.find(
+      (product: any) => product._id === updateId?._id
+    );
+    setUpdateId(updatedSelectedOrder || null);
+  }, [productsData?.data?.results, updateId?._id]);
+
+  // const [fileData, setFileData] = useState<any>({});
+
+  const handleFileUpload = async ({ file }: any) => {
+    const loadingMessage = message.loading("Uploading !!", 0);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      await axios.post(
+        `${API_URL}/upload/products/${updateId?._id}/images`,
+        formData
+      );
+
+      await refetch();
+      loadingMessage();
+      message.success("Upload Successful", 1.5);
+      // You can add further logic to handle the success, such as updating UI or state.
+    } catch (error) {
+      // Handle any errors here
+      console.error("Upload Error", error);
+      message.error("Upload Error", 1.5);
+
+      // You can add further logic to handle the error, such as displaying an error message.
+    }
+  };
 
   return (
-    <>
-      {/* Modal Create A product */}
+    <div>
       <Modal
-        okType="dashed"
-        title={`Create Product `}
+        title="Create Customer"
         open={openCreate}
         onCancel={() => {
           setOpenCreate(false);
         }}
         onOk={() => {
           createForm.submit();
-          setRefresh((f) => f + 1);
         }}
+        okType="dashed"
         okText="Submit"
       >
-        <Form
-          className="container px-5"
-          form={createForm}
-          name="createForm"
-          onFinish={handleCreate}
-        >
+        <Form form={createForm} name="createForm" onFinish={handleCreate}>
+          <ProductForm
+            props={{
+              categoriesData: categoriesData?.data?.results,
+              suppliersData: suppliersData?.data?.results,
+            }}
+          />
           <Form.Item
             labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Category"
-            name="categoryId"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Category Name",
-              },
-            ]}
-          >
-            <Select
-              showSearch
-              placeholder="Select a person"
-              optionFilterProp="children"
-              onSearch={onSearchCategory}
-              filterOption={(input: any, option: any) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={categoriesData?.data?.results?.map(
-                (item: any, index: any) => {
-                  return {
-                    label: `${item.name}`,
-                    value: item._id,
-                  };
-                }
-              )}
-            />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Suppliers"
-            name="supplierId"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Category Name",
-              },
-            ]}
-          >
-            <Select
-              showSearch
-              placeholder="Select a person"
-              optionFilterProp="children"
-              onSearch={onSearchCategory}
-              filterOption={(input: any, option: any) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={suppliersData?.data?.results?.map(
-                (item: any, index: any) => {
-                  return {
-                    label: `${item.name}`,
-                    value: item._id,
-                  };
-                }
-              )}
-            />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Name"
-            name="name"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Product Name",
-              },
-            ]}
-          >
-            <Input />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            name="price"
-            label="Price"
-            rules={[{ required: true, message: "Please enter Price" }]}
-          >
-            <InputNumber
-              style={{ width: 150 }}
-              min={1}
-              formatter={(value) =>
-                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-              }
-              parser={(value: any) =>
-                value!.replace(/\s?d|(\.*)/g, "").replace(/\./g, "")
-              }
-            />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            name="discount"
-            label="Discount"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Discount",
-              },
-            ]}
-          >
-            <InputNumber min={1} max={75} />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            name="stock"
-            label="Stock"
-            rules={[{ required: true, message: "Please enter Stock" }]}
-          >
-            <InputNumber min={1} />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="active"
-            name="active"
-            valuePropName="checked"
-          >
-            <Checkbox />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="PromotionPosition"
-            name="promotionPosition"
-          >
-            <Select
-              mode="multiple"
-              allowClear
-              showSearch
-              placeholder="Select promotion"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={[
-                {
-                  value: "TOP-MONTH",
-                  label: "TOP-MONTH",
-                },
-                {
-                  value: "DEAL",
-                  label: "DEAL",
-                },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Note"
-            name="note"
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
+              span: 7,
             }}
             wrapperCol={{
               span: 16,
@@ -1135,26 +895,51 @@ function ProductsCRUD() {
             name="file"
           >
             <Upload
+              maxCount={1}
+              listType="picture-card"
               showUploadList={true}
               beforeUpload={(file) => {
-                setFile(file);
+                setFiles(file);
                 return false;
               }}
+              onRemove={() => {
+                setFiles("");
+              }}
             >
-              <Button icon={<UploadOutlined />}>Chọn hình ảnh</Button>
+              {!files ? (
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </div>
+              ) : (
+                ""
+              )}
             </Upload>
           </Form.Item>
         </Form>
       </Modal>
-      {/* List and function Product */}
+
+      {/* List and function  */}
+
       <Table
-        loading={isLoading}
-        tableLayout="auto"
-        rowKey="id"
+        loading={isLoading || isFetching || isMutating}
+        rowKey="_id"
         columns={columns}
         dataSource={productsData?.data?.results}
-        pagination={false}
-        scroll={{ x: "max-content", y: 600 }}
+        pagination={{
+          onChange: (e) => {
+            slideCurrent(e);
+            setCurrentPage(e);
+          },
+          total: productsData?.data?.amountResults,
+          showTotal: (total, range) =>
+            `Showing ${range[0]}-${range[1]} of ${total} items`,
+
+          size: "small",
+          current: currentPage,
+        }}
+        bordered
+        scroll={{ x: "max-content", y: 630 }}
         rowClassName={(record) => {
           if (record.active === false && record.isDeleted === false) {
             return "bg-dark-subtle";
@@ -1164,261 +949,33 @@ function ProductsCRUD() {
             return "";
           }
         }}
-        // dataSource={filterOn ? suppliersFilter : products}
-      >
-        {" "}
-      </Table>
+      />
 
-      {/* Modal Update */}
+      {/* Model Update */}
       <Modal
-        okType="dashed"
-        title={`Update Product:  `}
         open={open}
-        onCancel={() => {
-          setOpen(false);
-        }}
+        title="Update Product"
+        onCancel={() => setOpen(false)}
         onOk={() => {
           updateForm.submit();
-          setRefresh((f) => f + 1);
         }}
+        okType="dashed"
       >
-        <Form
-          className="container px-5"
-          form={updateForm}
-          name="updateForm"
-          onFinish={handleUpdate}
-        >
-          <Form.Item
-            labelCol={{
-              span: 8,
+        <Form form={updateForm} name="updateForm" onFinish={handleUpdate}>
+          <ProductForm
+            props={{
+              categoriesData: categoriesData?.data?.results,
+              suppliersData: suppliersData?.data?.results,
             }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Category"
-            name="categoryId"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Category Name",
-              },
-            ]}
-          >
-            <Select
-              showSearch
-              placeholder="Select a person"
-              optionFilterProp="children"
-              filterOption={(input: any, option: any) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={categoriesData?.data?.results?.map(
-                (item: any, index: any) => {
-                  return {
-                    label: `${item.name}`,
-                    value: item._id,
-                  };
-                }
-              )}
-            />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Suppliers"
-            name="supplierId"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Category Name",
-              },
-            ]}
-          >
-            <Select
-              showSearch
-              placeholder="Select a person"
-              optionFilterProp="children"
-              filterOption={(input: any, option: any) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={suppliersData?.data?.results?.map(
-                (item: any, index: any) => {
-                  return {
-                    label: `${item.name}`,
-                    value: item._id,
-                  };
-                }
-              )}
-            />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Name"
-            name="name"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Product Name",
-              },
-            ]}
-          >
-            <Input />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            name="price"
-            label="Price"
-            rules={[{ required: true, message: "Please enter Price" }]}
-          >
-            <InputNumber
-              style={{ width: "100%" }}
-              min={1}
-              formatter={(value) =>
-                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-              }
-              parser={(value: any) =>
-                value!.replace(/\s?d|(\.*)/g, "").replace(/\./g, "")
-              }
-            />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            name="discount"
-            label="Discount"
-            rules={[
-              {
-                required: true,
-                message: "Please enter Discount",
-              },
-            ]}
-          >
-            <InputNumber min={1} max={75} />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            name="stock"
-            label="Stock"
-            rules={[{ required: true, message: "Please enter Stock" }]}
-          >
-            <InputNumber min={1} />
-          </Form.Item>{" "}
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="active"
-            name="active"
-            valuePropName="checked"
-          >
-            <Checkbox />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="PromotionPosition"
-            name="promotionPosition"
-          >
-            <Select
-              mode="multiple"
-              allowClear
-              showSearch
-              placeholder="Select promotion"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.label ?? "")
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
-              options={[
-                {
-                  value: "TOP-MONTH",
-                  label: "TOP-MONTH",
-                },
-                {
-                  value: "DEAL",
-                  label: "DEAL",
-                },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="isDeleted"
-            name="isDeleted"
-            valuePropName="checked"
-          >
-            <Checkbox />
-          </Form.Item>
-          <Form.Item
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            hasFeedback
-            label="Note"
-            name="note"
-          >
-            <Input />
-          </Form.Item>
+          />
         </Form>
       </Modal>
-
-      {/* Model Detail Picture */}
 
       <Modal
         open={openDetailPicture}
         onCancel={() => setOpenDetailPicture(false)}
         onOk={() => setOpenDetailPicture(false)}
+        okType="default"
       >
         {updateId && (
           <div className="text-center">
@@ -1427,34 +984,30 @@ function ProductsCRUD() {
             </div>{" "}
             <div className="text-center  py-2 ">Avatar product:</div>{" "}
             <div className="d-flex justify-content-center">
-              {" "}
               <Card>
-                {" "}
                 <Image
                   width={200}
                   height={200}
-                  src={`${URL_ENV}${updateId?.imageUrl}`}
+                  src={`${API_URL}${updateId?.imageUrl}`}
                 />
               </Card>
             </div>
             <Upload
               showUploadList={false}
               name="file"
-              action={`${URL_ENV}/upload/products/${updateId?._id}/image`}
+              action={`${API_URL}/upload/products/${updateId?._id}/image`}
               headers={{ authorization: "authorization-text" }}
-              onChange={(info) => {
-                if (info.file.status !== "uploading") {
-                  console.log(info.file);
+              onChange={async (info) => {
+                console.log(`🚀🚀🚀!..info`, info);
+
+                if (info.file.status === "uploading") {
                   message.loading("On Updating picture on data!!", 1.5);
                 }
 
-                if (info.file.status === "done") {
-                  setTimeout(() => {
-                    setRefresh(refresh + 1);
-                    message.success(
-                      `${info.file.name} file uploaded successfully`
-                    );
-                  }, 2000);
+                if (info.file.response.ok === true) {
+                  message.success(" Updating picture on data Okay!!", 1.5);
+
+                  await refetch();
                 } else if (info.file.status === "error") {
                   message.error(`${info.file.name} file upload failed.`);
                 }
@@ -1468,74 +1021,77 @@ function ProductsCRUD() {
           <div className="py-2">List of picture: </div>
           <Space>
             {updateId && (
-              <Upload
-                name="file"
-                action={`${URL_ENV}/upload/products/${updateId?._id}/images`}
-                listType="picture-card"
-                fileList={updateId?.images?.map((item: any, index: any) => ({
-                  uid: `${-index}`,
-                  name: `image${index}.png`,
-                  status: "done",
-                  url: `${URL_ENV}${item}`,
-                }))}
-                onChange={(record: any) => {
-                  console.log("««««« record »»»»»", record);
-                  if (record.file.status !== "uploading") {
-                    message.loading("On Updating picture on data!!", 1.5);
-                  }
-                  if (record.file.status === "uploading") {
-                    message.loading("On Updating picture on data!!", 1.5);
-
-                    updateId?.images?.push({ images: record.file.url });
-
-                    setTimeout(() => {
-                      setRefresh((f) => f + 1);
-                      message.success(
-                        `${record.file.name} file uploaded successfully`
-                      );
-                    }, 2500);
-                  } else if (record.file.status === "removed") {
-                    const newlistPicture = updateId?.images?.filter(
-                      (item: any) => `${URL_ENV}${item}` !== record.file.url
-                    );
-                    axios
-                      .patch(URL_ENV + "/" + updateId._id, {
-                        images: newlistPicture,
-                      })
-                      .then((res) => {
-                        setTimeout(() => {
-                          setRefresh(refresh + 1);
-                          message.success(
-                            `Delete Picture product successfully!!`,
-                            3
-                          );
-                        }, 1000);
-                      });
-                  } else if (record.file.status === "error") {
-                    message.error(`${record.file.name} file upload failed.`);
-                  }
-
-                  setTimeout(() => {
-                    // console.log("««««« record »»»»»", record.file.status);
-                  }, 2000);
-                }}
-              >
-                {updateId?.images?.length >= 5 ? null : <UploadOutlined />}
-              </Upload>
+              <>
+                <Upload
+                  multiple
+                  customRequest={handleFileUpload}
+                  showUploadList={false}
+                >
+                  <Space
+                    className="transition ease-in-out delay-300 w-24 h-24 border-dashed rounded-lg border-2 flex flex-1 justify-center items-center hover:border-slate-500"
+                    direction="vertical"
+                  >
+                    <Button icon={<UploadOutlined />} />
+                  </Space>
+                </Upload>
+                {updateId?.images?.map((item: any, index: any) => {
+                  return (
+                    <div className="image-container" key={index}>
+                      <Image
+                        preview={{
+                          mask: (
+                            <Popconfirm
+                              okText="Delete"
+                              okType="danger"
+                              onCancel={(e) => {
+                                e?.stopPropagation();
+                              }}
+                              onConfirm={(e) => {
+                                e?.stopPropagation();
+                                const newlistPicture = updateId?.images?.filter(
+                                  (field: any) => field !== item
+                                );
+                                axiosClient
+                                  .patch(`/products/${updateId._id}`, {
+                                    images: newlistPicture,
+                                  })
+                                  .then((res) => {
+                                    refetch();
+                                  })
+                                  .catch((err) =>
+                                    console.log("error delte image", err)
+                                  );
+                              }}
+                              title={"Are you sure to delete this image?"}
+                            >
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className="bg-slate-700 font-semibold border-3 rounded shadow hover:border-gray-500"
+                                icon={
+                                  <DeleteOutlined className="text-red-600" />
+                                }
+                                title="Delete"
+                                type="ghost"
+                              />
+                            </Popconfirm>
+                          ),
+                        }}
+                        height={100}
+                        width={100}
+                        src={`${API_URL}/${item}`}
+                      />
+                    </div>
+                  );
+                })}
+              </>
             )}
           </Space>
         </div>
       </Modal>
-
-      {/* Pagination */}
-      <Pagination
-        className="py-4 container text-end "
-        onChange={(e) => slideCurrent(e)}
-        defaultCurrent={1}
-        total={productsData?.data?.amountResults}
-      />
-    </>
+    </div>
   );
 }
 
-export default ProductsCRUD;
+export default ProductCRUD;

@@ -1,25 +1,24 @@
-import { create } from "zustand";
+import create from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { message } from "antd";
 
 import { axiosClient } from "../libraries/axiosClient";
 
-interface isLogin {
+interface Account {
   email: string;
   password: string;
 }
-const TIME_REFRESH_TOKEN = 2 * 60 * 60 * 1000;
 
 export const useAuthStore = create(
   devtools(
     persist(
       (set: any, get: any) => {
-        let loginData: any = null; // Variable to store the login data
+        let loginData: any = null;
 
         return {
           auth: null,
-          login: async ({ email, password }: isLogin) => {
+          login: async ({ email, password }: Account) => {
             try {
               const found = await axiosClient.post("/employees/login", {
                 email: email,
@@ -114,27 +113,7 @@ export const useAuthStore = create(
               type: "auth/setData",
             });
           },
-          setLogout: async () => {
-            const auth: any = get().auth;
-            const dataFromToken = get().dataFromToken;
 
-            setTimeout(() => {
-              set(
-                {
-                  auth: {
-                    token: auth?.token,
-                    refreshToken: auth?.refreshToken,
-                  },
-                },
-                false,
-                {
-                  type: "auth/login-success",
-                }
-              );
-              // freshToken();
-              dataFromToken();
-            }, TIME_REFRESH_TOKEN);
-          },
           logout: async () => {
             // Use the loginData in the logout function
             if (loginData && loginData.payload && loginData.payload._id) {
